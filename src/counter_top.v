@@ -1,4 +1,4 @@
-module counter_gen(
+module counter_top(
     input wire clk,
     input wire rst,
     input wire [7:0]  r_data1,  // Byte 1: sync byte (deve ser 0x47)
