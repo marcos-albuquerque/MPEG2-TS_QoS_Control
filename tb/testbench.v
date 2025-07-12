@@ -18,8 +18,34 @@ module testbench();
     wire [DATA_WIDTH-1:0] byte_data4;
 
 
-    // TODO: Memory Mapped interconection
-    // ...
+    // Memory Mapped config interface
+    reg [7:0] mm_addr;
+    reg [31:0] mm_wdata;
+    reg [31:0] mm_rdata;
+    reg mm_read_en;
+    reg mm_write_en;
+
+    task mm_write(input [7:0] addr, input [31:0] data);
+        begin
+            @(posedge wclk);
+            mm_addr     <= addr;
+            mm_wdata    <= data;
+            mm_write_en <= 1'b1;
+            @(posedge wclk);
+            mm_write_en <= 1'b0;
+        end
+    endtask
+
+    task mm_read(input [7:0] addr, output [31:0] data);
+        begin
+            @(posedge wclk);
+            mm_addr    <= addr;
+            mm_read_en <= 1'b1;
+            @(posedge wclk);
+            data = mm_rdata;
+            mm_read_en <= 1'b0;
+        end
+    endtask
 
     clock_generator #(DATA_FREQUENCY, 1) CLOCK100M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK27M(.clk(rclk));
@@ -37,13 +63,14 @@ module testbench();
         .byte_data2(byte_data2),
         .byte_data3(byte_data3),
         .byte_data4(byte_data4)
-    );    
+    );
 
     initial begin
         reset_n = 1'b0; #40;
         reset_n = 1'b1;
 
         // ...
+        // TOP
     end
 
 endmodule
