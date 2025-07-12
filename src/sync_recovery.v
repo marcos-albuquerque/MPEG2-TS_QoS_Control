@@ -59,7 +59,7 @@ module sync_recovery(
         case (state) 
             IDLE: begin
                 COUNT_BYTES <= 1'b1;
-                COUNT_REPS <= 4'd0;
+                COUNT_REPS <= 8'd0;
             end
 
             CONTAGEM: begin
