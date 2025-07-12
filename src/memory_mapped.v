@@ -27,27 +27,26 @@ module memory_mapped (
 
     reg [31:0] mm_reg [0:2];
 
-    assign fallback_enable       <= mm_reg[0][0];
-    assign manual_enable         <= mm_reg[0][1];
-    assign manual_channel        <= mm_reg[0][3:2];
-    assign channel_priority      <= mm_reg[0][11:4];
-    assign reset_timer           <= mm_reg[0][31:12];
-    assign valid_config          <= 1;
+    assign fallback_enable       = mm_reg[0][0];
+    assign manual_enable         = mm_reg[0][1];
+    assign manual_channel        = mm_reg[0][3:2];
+    assign channel_priority      = mm_reg[0][11:4];
+    assign reset_timer           = mm_reg[0][31:12];
 
     // Escrita nos registradores
     always @(posedge clk or posedge rst) begin
+        valid_config <= 1'b0;
         if (rst) begin
             mm_reg[0]    <= 0;
             mm_reg[1]    <= 0;
             mm_reg[2]    <= 0;
-            valid_config <= 0;
         end else begin
             mm_reg[1] <= {26'd0, signal_present, active_channel};
             mm_reg[2] <= {error_count_ch3, error_count_ch2, error_count_ch1, error_count_ch0};
             if (mm_write_en)
                 if      (mm_addr  == 8'h00) begin
                     mm_reg[0]    <= mm_wdata;
-                    valid_config <= 1;
+                    valid_config <= 1'b1;
                 end
             if (mm_read_en)
                 if      (mm_addr  == 8'h00) mm_rdata  <= mm_reg[0];

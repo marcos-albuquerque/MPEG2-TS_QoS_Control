@@ -13,13 +13,15 @@ module main_control(
     output [31:0] mm_rdata,
 
     // Main_control output
-    output [1:0]  mux_control
+    output [1:0]  mux_control,
+    output        en_mux,
+    output [19:0] timer
 );
     //FSM States
-    `define IDLE         2'd0
-    `define CHOOSE_CHNEL 2'd1
-    `define CHANGE_CHNEL 2'd2
-    `define FUTURE_USE   2'd3
+    `define IDLE        2'd0
+    `define CONFIG_MODE 2'd1
+    `define AUTO_MODE   2'd2
+    `define MANUAL_MODE 2'd3
 
     //Channels
     `define CHANNEL1     2'd0
@@ -45,12 +47,13 @@ module main_control(
 
     //Aux variables
     reg [1:0]  state;
-    reg [19:0] timer;
+    reg [19:0] intern_counter;
+    reg        en_module;
 
     assign error_count_ch0 = err_count[7:0];
-    assign error_count_ch1 = err_count[8:15];
-    assign error_count_ch2 = err_count[16:23];
-    assign error_count_ch3 = err_count[24:31];
+    assign error_count_ch1 = err_count[15:8];
+    assign error_count_ch2 = err_count[23:16];
+    assign error_count_ch3 = err_count[31:24];
 
     assign signal_present[0]  = valid[0];
     assign signal_present[1]  = valid[1];
@@ -58,6 +61,8 @@ module main_control(
     assign signal_present[3]  = valid[3];
     
     assign mux_control = active_channel;
+    assign timer       = (!en_module || (state == `CONFIG_MODE)) ? 20'd0: reset_timer;
+    assign en_mux      = en_module;
 
     memory_mapped mm_mapped (
 
@@ -87,47 +92,114 @@ module main_control(
         .error_count_ch3(error_count_ch3)
     );
 
+    //System counter. When intern_counter = reset_timer, it'll search a new channel
+    always @(posedge clk or posedge rst) begin
+        if(rst) begin
+            intern_counter    <= 20'd0;
+        end 
+        else begin
+            if(en_module)  
+                if      (intern_counter == reset_timer) intern_counter <= 20'd0;
+                else if (state == `CONFIG_MODE)         intern_counter <= 20'd0;
+                else                                    intern_counter <= intern_counter + 1;
+        end
+    end
+
     always @(posedge clk or posedge rst) begin
         if(rst) begin
             state           <= `IDLE;
             active_channel  <= `CHANNEL1;
+            en_module       <= 1'b0;
         end
         else begin
             case(state)
                 // wait config parameters
                 `IDLE: begin
-                    if(valid_config)begin
-                        state          <= `CHOOSE_CHNEL;
-                        active_channel <= 
+                    if(valid_config) state <= `CONFIG_MODE;
+                    else             state <= `IDLE;
+                end
 
-                        
-
-
-
+                `CONFIG_MODE: begin
+                    en_module     <= 1'b1;
+                    if(manual_enable) begin
+                        active_channel <= manual_channel;
+                        state          <= `MANUAL_MODE;
                     end
+                    else begin
+                        active_channel <= channel_priority[1:0];
+                        state          <= `AUTO_MODE;
+                    end
+                end
 
+                `AUTO_MODE: begin
+
+                    if      (valid_config)                   state          <= `CONFIG_MODE;
+                    else if (intern_counter > reset_timer-1) active_channel <= select_new_channel(fallback_enable,channel_priority,err_count);
+                    else                                     state          <= `AUTO_MODE;
 
                 end
 
-                `CHOOSE_CHNEL: begin
-                    
-
-
-
+                `MANUAL_MODE: begin
+                    if (valid_config)   state <= `CONFIG_MODE;
+                    else                state <= `MANUAL_MODE;
                 end
 
-                `CHANGE_CHNEL: begin
-                    
-
-
-                end
-
-                default: begin
-                    
-                end
+                default:                state <= `IDLE;
 
             endcase
         end
     end
+
+
+    function [1:0] select_new_channel(
+        input        fallback_enable,
+        input [7:0]  channel_priority,
+        input [31:0] err_count
+        );
+
+        reg [1:0] partial_result [0:1];
+
+        begin
+            //if fallback_enable = 1, the function returns the highest priority when counters are same.
+            if(fallback_enable) begin
+
+                // if priority channel counter 3 < priority channel counter 2, return priority channel 3, else return priority channel 2
+                partial_result[0] = (priority_decode(channel_priority[7:6],err_count) < priority_decode(channel_priority[5:4],err_count)) ? channel_priority[7:6]: channel_priority[5:4];
+
+                // if priority channel counter 1 < priority channel counter 0, return priority channel 1, else return priority channel 0
+                partial_result[1] = (priority_decode(channel_priority[3:2],err_count) < priority_decode(channel_priority[1:0],err_count)) ? channel_priority[3:2]: channel_priority[1:0];
+                
+                select_new_channel = (priority_decode(partial_result[0],err_count) < priority_decode(partial_result[1],err_count)) ? partial_result[0] : partial_result[1];
+            end
+            //if fallback_enable = 0, the function stays the current channel when counters are same.
+            else begin
+
+                // if priority channel counter 3 <= priority channel counter 2, return priority channel 3, else return priority channel 2
+                partial_result[0] = (priority_decode(channel_priority[7:6],err_count) <= priority_decode(channel_priority[5:4],err_count)) ? channel_priority[7:6]: channel_priority[5:4];
+                
+                // if priority channel counter 1 <= priority channel counter 0, return priority channel 1, else return priority channel 0
+                partial_result[1] = (priority_decode(channel_priority[3:2],err_count) <= priority_decode(channel_priority[1:0],err_count)) ? channel_priority[3:2]: channel_priority[1:0];
+            
+                select_new_channel = (priority_decode(partial_result[0],err_count) <= priority_decode(partial_result[1],err_count)) ? partial_result[0] : partial_result[1];
+
+            end
+        end
+
+    endfunction
+
+    function [7:0] priority_decode(
+        input [1:0]  var_decode,
+        input [31:0] err_count
+    );
+        begin
+            case(var_decode)
+                `CHANNEL1 : priority_decode = err_count[7:0];
+                `CHANNEL2 : priority_decode = err_count[15:8];
+                `CHANNEL3 : priority_decode = err_count[23:16];
+                `CHANNEL4 : priority_decode = err_count[31:24];
+                default   : priority_decode = 8'b0;
+            endcase
+        end
+    endfunction
 
 endmodule
