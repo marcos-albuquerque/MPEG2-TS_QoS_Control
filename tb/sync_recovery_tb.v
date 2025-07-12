@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module testbench();
+module syn_recovery_tb();
     localparam real DATA_FREQUENCY = 100e6;      // Clock frequency in Hz
     localparam real SYS_FREQUENCY = 27e6;
     localparam FILE_NAME1 = "tsdata1_loss.ts";
@@ -38,6 +38,19 @@ module testbench();
         .byte_data3(byte_data3),
         .byte_data4(byte_data4)
     ); 
+
+
+    wire valid_packet;
+    wire [7:0] byte_out;
+
+    sync_recovery(
+                    .clk(wclk), 
+                    .rst(reset_n),
+                    .byte_in(byte_data1),
+                    .byte_valid(1'b1),
+                    .valid_packet(valid_packet),
+                    .byte_out(byte_out)
+    );
 
     initial begin
         reset_n = 1'b0; #40;
