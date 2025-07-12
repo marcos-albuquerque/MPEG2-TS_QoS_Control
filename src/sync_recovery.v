@@ -35,8 +35,9 @@ module sync_recovery(
                 VERIFICACAO: begin
                     if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
                         state <= CONTAGEM;
-                    end else if ((byte_in == SYNC_BYTE && COUNT_REPS == MAX_REPS) || sync) begin
+                    end else if (byte_in == SYNC_BYTE && COUNT_REPS >= MAX_REPS) begin
                         state <= SYNC_FOUND;
+                        $disply(state);
                     end else  begin
                         state <= IDLE;
                     end 
@@ -54,7 +55,7 @@ module sync_recovery(
 
 
     always@(posedge clk or negedge rst) begin
-        case (state) 
+        case (state)
             IDLE: begin
                 sync <= 1'b0;
                 valid_packet <= 1'b0;
@@ -70,12 +71,13 @@ module sync_recovery(
             VERIFICACAO: begin
                 COUNT_BYTES <= 8'd1;
                 COUNT_REPS <= COUNT_REPS + 1'b1;
+                if (byte_in == SYNC_BYTE && sync) valid_packet <= 1'b1;
             end
 
             SYNC_FOUND: begin
                 valid_packet <= 1'b1;
                 COUNT_REPS <= 4'd0;
-                COUNT_BYTES <= 8'd1;
+                COUNT_BYTES <= 8'd2;
                 sync <= 1'b1;
             end
         endcase
