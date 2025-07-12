@@ -1,28 +1,28 @@
 module memory_mapped (
-    input  wire        clk,
-    input  wire        rst,
+    input              clk,
+    input              rst,
 
     // Interface memory-mapped
-    input  wire        mm_write_en,
-    input  wire        mm_read_en,
-    input  wire [7:0]  mm_addr,
-    input  wire [31:0] mm_wdata,
+    input              mm_write_en,
+    input              mm_read_en,
+    input       [7:0]  mm_addr,
+    input       [31:0] mm_wdata,
     output reg  [31:0] mm_rdata,
 
     // Conexões com o módulo QoS core
-    output reg         fallback_enable,
-    output reg         manual_enable,
-    output reg  [1:0]  manual_channel,
-    output reg  [7:0]  channel_priority,
-    output reg  [19:0] reset_timer,  // 20 bits para 1M ciclos (~20 bits)
-    output reg         valid_config,
+    output             fallback_enable,
+    output             manual_enable,
+    output      [1:0]  manual_channel,
+    output      [7:0]  channel_priority,
+    output      [19:0] reset_timer,  // 20 bits para 1M ciclos (~20 bits)
+    output             valid_config,
 
-    input  wire [1:0]  active_channel,
-    input  wire [3:0]  signal_present,
-    input  wire [7:0]  error_count_ch0,
-    input  wire [7:0]  error_count_ch1,
-    input  wire [7:0]  error_count_ch2,
-    input  wire [7:0]  error_count_ch3
+    input       [1:0]  active_channel,
+    input       [3:0]  signal_present,
+    input       [7:0]  error_count_ch0,
+    input       [7:0]  error_count_ch1,
+    input       [7:0]  error_count_ch2,
+    input       [7:0]  error_count_ch3
 );
 
     reg [31:0] mm_reg [0:2];
