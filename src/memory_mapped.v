@@ -15,7 +15,7 @@ module memory_mapped (
     output      [1:0]  manual_channel,
     output      [7:0]  channel_priority,
     output      [19:0] reset_timer,  // 20 bits para 1M ciclos (~20 bits)
-    output             valid_config,
+    output reg         valid_config,
 
     input       [1:0]  active_channel,
     input       [3:0]  signal_present,

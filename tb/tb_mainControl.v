@@ -101,7 +101,7 @@ module tb();
             mm_read(8'h01);
             @(posedge clk);
             @(posedge clk);
-            $display("canal ativo: %b | presença de sinal %b",mm_rdata[1:0],mm_rdata[5:2]);
+            $display("canal ativo: %b | presenca de sinal %b",mm_rdata[1:0],mm_rdata[5:2]);
             mm_read(8'h02);
             @(posedge clk);
             @(posedge clk);

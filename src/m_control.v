@@ -165,7 +165,7 @@ module main_control(
 
                 // if priority channel counter 3 < priority channel counter 2, return priority channel 3, else return priority channel 2
                 partial_result[0] = (priority_decode(channel_priority[7:6],err_count) < priority_decode(channel_priority[5:4],err_count)) ? channel_priority[7:6]: channel_priority[5:4];
-
+                $display("teste: %d | chnel: ",priority_decode(channel_priority[7:6],err_count), channel_priority[7:6]);
                 // if priority channel counter 1 < priority channel counter 0, return priority channel 1, else return priority channel 0
                 partial_result[1] = (priority_decode(channel_priority[3:2],err_count) < priority_decode(channel_priority[1:0],err_count)) ? channel_priority[3:2]: channel_priority[1:0];
                 
