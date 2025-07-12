@@ -7,7 +7,7 @@ module sync_recovery(
 );
 
     localparam IDLE = 0, CONTAGEM = 1, VERIFICACAO = 2, SYNC_FOUND = 3;
-    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd10;
+    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd200;
 
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
@@ -21,31 +21,31 @@ module sync_recovery(
             case (state)
                 IDLE: begin
                     if (byte_in == SYNC_BYTE) begin
-                        state = CONTAGEM;
+                        state <= CONTAGEM;
                     end 
                 end 
                     
                 CONTAGEM: begin
                     if (COUNT_BYTES == 8'd187) begin
-                        state = VERIFICACAO;
+                        state <= VERIFICACAO;
                     end
                 end
 
                 VERIFICACAO: begin
                     if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
-                        state = CONTAGEM;
+                        state <= CONTAGEM;
                     end else if (byte_in == SYNC_BYTE && COUNT_REPS == MAX_REPS) begin
-                        state = SYNC_FOUND;
+                        state <= SYNC_FOUND;
                     end else  begin
-                        state = IDLE;
+                        state <= IDLE;
                     end 
                 end
 
                 SYNC_FOUND: begin
-                    state = CONTAGEM;
+                    state <= CONTAGEM;
                 end
 
-                default: state = IDLE;
+                default: state <= IDLE;
             endcase
 
         end
@@ -81,7 +81,7 @@ module sync_recovery(
     end
 
     always@(posedge clk) begin
-        byte_out = byte_in;
+        byte_out <= byte_in;
     end
 
 endmodule
