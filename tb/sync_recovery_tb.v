@@ -43,7 +43,7 @@ module syn_recovery_tb();
     wire valid_packet;
     wire [7:0] byte_out;
 
-    sync_recovery(
+    sync_recovery sync_recovery_inst(
                     .clk(wclk), 
                     .rst(reset_n),
                     .byte_in(byte_data1),

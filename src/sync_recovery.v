@@ -29,8 +29,6 @@ module sync_recovery(
                 CONTAGEM: begin
                     if (COUNT_BYTES == 8'd187) begin
                         state = VERIFICACAO;
-                    end else if (byte_in == 8'h47) begin
-                        state = IDLE;
                     end
                 end
 
@@ -66,9 +64,6 @@ module sync_recovery(
 
             CONTAGEM: begin
                 COUNT_BYTES <= COUNT_BYTES + 1'b1;
-                if (byte_in == SYNC_BYTE ) begin
-                    COUNT_BYTES <= 1;
-                end
             end
 
             VERIFICACAO: begin
