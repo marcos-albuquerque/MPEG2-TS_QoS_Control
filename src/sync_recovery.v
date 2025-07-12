@@ -56,9 +56,9 @@ module sync_recovery(
     always@(posedge clk or negedge rst) begin
         case (state) 
             IDLE: begin
-                sync = 1'b0;
+                sync <= 1'b0;
                 valid_packet <= 1'b0;
-                COUNT_BYTES <= 1'b0;
+                COUNT_BYTES <= 1'b1;
                 COUNT_REPS <= 8'd0;
             end
 
@@ -68,7 +68,7 @@ module sync_recovery(
             end
 
             VERIFICACAO: begin
-                COUNT_BYTES <= 8'd0;
+                COUNT_BYTES <= 8'd1;
                 COUNT_REPS <= COUNT_REPS + 1'b1;
             end
 
@@ -76,7 +76,7 @@ module sync_recovery(
                 valid_packet <= 1'b1;
                 COUNT_REPS <= 4'd0;
                 COUNT_BYTES <= 8'd1;
-                sync = 1'b1;
+                sync <= 1'b1;
             end
         endcase
 
