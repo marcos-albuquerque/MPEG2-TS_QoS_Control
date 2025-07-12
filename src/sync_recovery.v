@@ -13,6 +13,7 @@ module sync_recovery(
     reg [7:0] COUNT_BYTES;
     reg [7:0] COUNT_REPS;
     reg [7:0] buffer[187:0];
+    reg sync;
 
     always@(posedge clk or negedge rst) begin
         if (!rst) begin
@@ -34,7 +35,7 @@ module sync_recovery(
                 VERIFICACAO: begin
                     if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
                         state <= CONTAGEM;
-                    end else if (byte_in == SYNC_BYTE && COUNT_REPS == MAX_REPS) begin
+                    end else if ((byte_in == SYNC_BYTE && COUNT_REPS == MAX_REPS) || sync) begin
                         state <= SYNC_FOUND;
                     end else  begin
                         state <= IDLE;
@@ -55,6 +56,7 @@ module sync_recovery(
     always@(posedge clk or negedge rst) begin
         case (state) 
             IDLE: begin
+                sync = 1'b0;
                 valid_packet <= 1'b0;
                 COUNT_BYTES <= 1'b0;
                 COUNT_REPS <= 8'd0;
@@ -74,6 +76,7 @@ module sync_recovery(
                 valid_packet <= 1'b1;
                 COUNT_REPS <= 4'd0;
                 COUNT_BYTES <= 8'd1;
+                sync = 1'b1;
             end
         endcase
 
