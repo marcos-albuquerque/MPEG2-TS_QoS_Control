@@ -37,7 +37,7 @@ module sync_recovery(
                         state <= CONTAGEM;
                     end else if (byte_in == SYNC_BYTE && COUNT_REPS >= MAX_REPS) begin
                         state <= SYNC_FOUND;
-                        $disply(state);
+                        $display(state);
                     end else  begin
                         state <= IDLE;
                     end 
