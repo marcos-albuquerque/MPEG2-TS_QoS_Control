@@ -17,7 +17,7 @@ module main_control(
     input  [3:0]  valid,     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
     input  [31:0] err_count, // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
 
-    // Memory_mapped pins
+    // Memory_mapped interface
     input         mm_write_en,
     input         mm_read_en,
     input  [7:0]  mm_addr,
@@ -27,7 +27,7 @@ module main_control(
     // Main_control output
     output [1:0]  mux_control,
     output        en_mux,
-    output [19:0] timer
+    output        en_reset_counter;
 );
 
     //Memory_mapped variables
@@ -50,6 +50,7 @@ module main_control(
     reg [1:0]  state;
     reg [19:0] intern_counter;
     reg        en_module;
+    reg        reset_packet_loss_counter;
 
     assign error_count_ch0 = err_count[7:0];
     assign error_count_ch1 = err_count[15:8];
@@ -61,9 +62,9 @@ module main_control(
     assign signal_present[2]  = valid[2];
     assign signal_present[3]  = valid[3];
     
-    assign mux_control = active_channel;
-    assign timer       = (!en_module || (state == `CONFIG_MODE)) ? 20'd0: reset_timer;
-    assign en_mux      = en_module;
+    assign mux_control        = active_channel;
+    assign en_mux             = en_module;
+    assign en_reset_counter   = reset_packet_loss_counter;
 
     memory_mapped mm_mapped (
 
@@ -108,9 +109,10 @@ module main_control(
 
     always @(posedge clk or posedge rst) begin
         if(rst) begin
-            state           <= `IDLE;
-            active_channel  <= `CHANNEL1;
-            en_module       <= 1'b0;
+            state                     <= `IDLE;
+            active_channel            <= `CHANNEL1;
+            en_module                 <= 1'b0;
+            reset_packet_loss_counter <= 1'b0;
         end
         else begin
             case(state)
@@ -133,10 +135,14 @@ module main_control(
                 end
 
                 `AUTO_MODE: begin
-
-                    if      (valid_config)                   state          <= `CONFIG_MODE;
-                    else if (intern_counter > reset_timer-1) active_channel <= select_new_channel(fallback_enable,channel_priority,err_count);
-                    else                                     state          <= `AUTO_MODE;
+                    reset_packet_loss_counter      <= 1'b0;
+                    if      (valid_config)
+                         state                     <= `CONFIG_MODE;
+                    else if (intern_counter > reset_timer-1) begin
+                         active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count);
+                         reset_packet_loss_counter <= 1'b1;
+                    end
+                    else state                     <= `AUTO_MODE;
 
                 end
 
