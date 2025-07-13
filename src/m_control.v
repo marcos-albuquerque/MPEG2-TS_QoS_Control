@@ -27,7 +27,7 @@ module main_control(
     // Main_control output
     output [1:0]  mux_control,
     output        en_mux,
-    output        en_reset_counter;
+    output        en_reset_counter
 );
 
     //Memory_mapped variables
@@ -36,7 +36,6 @@ module main_control(
     wire [1:0]  manual_channel;
     wire [7:0]  channel_priority;
     wire [19:0] reset_timer;
-    wire        valid_config;
 
     //Main_control variables
     reg  [1:0]  active_channel;
@@ -83,7 +82,6 @@ module main_control(
         .manual_channel  (manual_channel),
         .channel_priority(channel_priority),
         .reset_timer     (reset_timer),
-        .valid_config    (valid_config),
 
         // Read
         .active_channel (active_channel),
@@ -94,7 +92,8 @@ module main_control(
         .error_count_ch3(error_count_ch3)
     );
 
-    //System counter. When intern_counter = reset_timer, it'll search a new channel
+    //System counter
+    //When intern_counter = reset_timer, it'll search a new channel
     always @(posedge clk or posedge rst) begin
         if(rst) begin
             intern_counter    <= 20'd0;
@@ -118,12 +117,12 @@ module main_control(
             case(state)
                 // wait config parameters
                 `IDLE: begin
-                    if(valid_config) state <= `CONFIG_MODE;
+                    if(mm_write_en)  state <= `CONFIG_MODE;
                     else             state <= `IDLE;
                 end
 
                 `CONFIG_MODE: begin
-                    en_module     <= 1'b1;
+                    en_module <= 1'b1;
                     if(manual_enable) begin
                         active_channel <= manual_channel;
                         state          <= `MANUAL_MODE;
@@ -135,19 +134,20 @@ module main_control(
                 end
 
                 `AUTO_MODE: begin
-                    reset_packet_loss_counter      <= 1'b0;
-                    if      (valid_config)
-                         state                     <= `CONFIG_MODE;
+                    reset_packet_loss_counter <= 1'b0;
+                    if      (mm_write_en)
+                        state                     <= `CONFIG_MODE;
                     else if (intern_counter > reset_timer-1) begin
-                         active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count);
-                         reset_packet_loss_counter <= 1'b1;
+                        active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count);
+                        reset_packet_loss_counter <= 1'b1;
                     end
-                    else state                     <= `AUTO_MODE;
+                    else 
+                        state                     <= `AUTO_MODE;
 
                 end
 
                 `MANUAL_MODE: begin
-                    if (valid_config)   state <= `CONFIG_MODE;
+                    if  (mm_write_en)   state <= `CONFIG_MODE;
                     else                state <= `MANUAL_MODE;
                 end
 
@@ -156,7 +156,6 @@ module main_control(
             endcase
         end
     end
-
 
     function [1:0] select_new_channel(
         input        fallback_enable,
@@ -188,6 +187,7 @@ module main_control(
         end
 
     endfunction
+
     //This function returns the channel counter;
     function [7:0] priority_decode(
         input [1:0]  var_decode,

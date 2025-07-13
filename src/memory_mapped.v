@@ -15,7 +15,6 @@ module memory_mapped (
     output      [1:0]  manual_channel,
     output      [7:0]  channel_priority,
     output      [19:0] reset_timer,  // 20 bits para 1M ciclos (~20 bits)
-    output reg         valid_config,
 
     input       [1:0]  active_channel,
     input       [3:0]  signal_present,
@@ -35,7 +34,6 @@ module memory_mapped (
 
     // Escrita nos registradores
     always @(posedge clk or posedge rst) begin
-        valid_config <= 1'b0;
         if (rst) begin
             mm_reg[0]    <= 0;
             mm_reg[1]    <= 0;
@@ -46,7 +44,6 @@ module memory_mapped (
             if (mm_write_en)
                 if      (mm_addr  == 8'h00) begin
                     mm_reg[0]    <= mm_wdata;
-                    valid_config <= 1'b1;
                 end
             if (mm_read_en)
                 if      (mm_addr  == 8'h00) mm_rdata  <= mm_reg[0];
