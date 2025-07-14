@@ -18,7 +18,7 @@ module tb();
     // Main_control wire
     wire [1:0]  mux_control;
     wire        en_mux;
-    wire [19:0] timer;
+    wire        en_reset_counter;
 
     main_control uut (
         // Main_control inputs
@@ -37,7 +37,7 @@ module tb();
         // Main_control output
         .mux_control(mux_control),
         .en_mux(en_mux),
-        .timer(timer)
+        .en_reset_counter(en_reset_counter)
     );
 
     reg        fallback_enable;
@@ -66,11 +66,12 @@ module tb();
 
     initial begin
         forever begin
+            err_count[7:0]   = ($random % 6 + 6) % 6;
+            err_count[15:8]  = ($random % 6 + 6) % 6;
+            err_count[23:16] = ($random % 6 + 6) % 6;
+            err_count[31:24] = ($random % 6 + 6) % 6;
+            valid            = $random;
             #20;
-            err_count[7:0]   = $random;
-            err_count[15:8]  = $random;
-            err_count[23:16] = $random;
-            err_count[31:24] = $random;
         end
     end
 
@@ -80,18 +81,26 @@ module tb();
         manual_channel   = 00;
         channel_priority = 8'b11_01_00_10;
         reset_timer      = 20'd30;
-        valid            = 4'b1111;
+        //valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-        #200;
+        #520;
         $display("Mudanca de parametros %t",$time);
         fallback_enable  = 1;
         manual_enable    = 1;
-        manual_channel   = 11;
-        channel_priority = 8'b11_01_00_10;
+        manual_channel   = 10;
+        channel_priority = 8'b11_01_10_00;
         reset_timer      = 20'd30;
-        valid            = 4'b1111;
+        //valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-        #1000;
+        #500;
+        fallback_enable  = 0;
+        manual_enable    = 0;
+        manual_channel   = 11;
+        channel_priority = 8'b00_11_10_01;
+        reset_timer      = 20'd50;
+        //valid            = 4'b1111;
+        mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
+        #2000;
         $stop;
     end
 

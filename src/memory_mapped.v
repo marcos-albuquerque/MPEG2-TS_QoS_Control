@@ -2,19 +2,19 @@ module memory_mapped (
     input              clk,
     input              rst,
 
-    // Interface memory-mapped
+    // Memory-mapped interface
     input              mm_write_en,
     input              mm_read_en,
     input       [7:0]  mm_addr,
     input       [31:0] mm_wdata,
     output reg  [31:0] mm_rdata,
 
-    // Conexões com o módulo QoS core
+    // Connections from main_control module
     output             fallback_enable,
     output             manual_enable,
     output      [1:0]  manual_channel,
     output      [7:0]  channel_priority,
-    output      [19:0] reset_timer,  // 20 bits para 1M ciclos (~20 bits)
+    output      [19:0] reset_timer,  // 20 bits
 
     input       [1:0]  active_channel,
     input       [3:0]  signal_present,
@@ -32,7 +32,7 @@ module memory_mapped (
     assign channel_priority      = mm_reg[0][11:4];
     assign reset_timer           = mm_reg[0][31:12];
 
-    // Escrita nos registradores
+    // Writing and Reading in memory_mapped
     always @(posedge clk or posedge rst) begin
         if (rst) begin
             mm_reg[0]    <= 0;
