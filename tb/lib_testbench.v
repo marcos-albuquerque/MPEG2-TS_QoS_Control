@@ -49,14 +49,9 @@ module stimulus_from_file #(
             while (! $feof(fh1)) begin
                 @(posedge clk)
                     byte_data1_ = $fgetc(fh1);
-                    $display("Data1: %h", byte_data1);
                     byte_data2_ = $fgetc(fh2);
-                    $display("Data2: %h", byte_data2);
                     byte_data3_ = $fgetc(fh3);
-                    $display("Data3: %h", byte_data3);
                     byte_data4_ = $fgetc(fh4);
-                    $display("Data4: %h", byte_data4);
-                    $display("EOF: %0d", !$feof(fh1));
             end
         end
 

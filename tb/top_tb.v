@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module testbench();
+module top_tb();
     localparam real DATA_FREQUENCY = 100e6;      // Clock frequency in Hz
     localparam real SYS_FREQUENCY = 27e6;
     localparam FILE_NAME1 = "tsdata1_loss.ts";
@@ -9,7 +9,12 @@ module testbench();
     localparam FILE_NAME4 = "tsdata4_loss.ts";
     localparam DATA_WIDTH = 8;
 
-    reg reset_n;
+    reg rst_n;
+    reg valid1;
+    reg valid2;
+    reg valid3;
+    reg valid4;
+    
     wire wclk;
     wire rclk;
     wire [DATA_WIDTH-1:0] byte_data1;
@@ -65,12 +70,49 @@ module testbench();
         .byte_data4(byte_data4)
     );
 
-    initial begin
-        reset_n = 1'b0; #40;
-        reset_n = 1'b1;
+    top  DUT (
+        .rst_n(rst_n),
+
+        .wclk1(wclk1),
+        .valid1(valid1),
+        .ts_data1(ts_data1),
+
+        .wclk2(wclk2),
+        .valid2(valid2),
+        .ts_data2(ts_data2),
+
+        .wclk3(wclk3),
+        .valid3(valid3),
+        .ts_data3(ts_data3),
+
+        .wclk4(wclk4),
+        .valid4(valid4),
+        .ts_data4(ts_data4),
+
+        .rclk(rclk),
+
+        .mm_write_en(mm_write_en),
+        .mm_read_en(mm_read_en),
+        .mm_addr(mm_addr),
+        .mm_wdata(mm_wdata),
+        .mm_rdata(mm_rdata),
+
+        .clk_out(clk_out),
+        .valid_out(valid_out),
+        .syn_out(syn_out),
+        .ts_data_out(ts_data_out)
+    );
+
+    initial begin : tester
+        rst_n = 1'b0; #40;
+        rst_n = 1'b1;
 
         // ...
         // TOP
+    end
+
+    initial begin : scoreboard
+        
     end
 
 endmodule
