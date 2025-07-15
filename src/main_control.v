@@ -4,6 +4,7 @@ module main_control(
     input         rstn,
     input  [3:0]  valid,     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
     input  [31:0] err_count, // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
+    input  [3:0]  sync,
 
     // Memory_mapped interface
     input         mm_write_en,
@@ -14,7 +15,7 @@ module main_control(
 
     // Main_control output
     output [1:0]  mux_control,
-    output        en_mux,
+    //output        en_mux,
     output        en_reset_counter
 );
 
@@ -46,10 +47,10 @@ module main_control(
     wire [7:0]  error_count_ch3;
 
     //Aux variables
-    reg [1:0]  state;
+    //reg [1:0]  state;
     reg [19:0] intern_counter;
     reg [3:0]  signal_present_ctrl;
-    reg        en_module;
+    //reg        en_module;
     reg        reset_packet_loss_counter;
 
     assign error_count_ch0 = err_count[7:0];
@@ -63,7 +64,7 @@ module main_control(
     assign signal_present[3]  = valid[3];
     
     assign mux_control        = active_channel;
-    assign en_mux             = en_module;
+    //assign en_mux             = en_module;
     assign en_reset_counter   = reset_packet_loss_counter;
 
     memory_mapped mm_mapped (
@@ -100,9 +101,9 @@ module main_control(
             intern_counter    <= 20'd0;
         end 
         else begin
-            if(en_module)  
+            //if(en_module)  
                 if      (intern_counter == reset_timer) intern_counter <= 20'd0; // if intern_counter = reset_timer, it starts a new count.
-                else if (state == CONFIG_MODE)          intern_counter <= 20'd0; // // if state = config it starts a new count.
+                else if (mm_write_en == 1'b1)           intern_counter <= 20'd0; // // if state = config it starts a new count.
                 else                                    intern_counter <= intern_counter + 1;
         end
     end
@@ -116,22 +117,38 @@ module main_control(
             if (reset_packet_loss_counter) // if a new count has been started, signal_present_ctrl will a new search 
                 signal_present_ctrl <= 4'b0000;
             else begin  // signal_present_ctrl = 1 if valid = 1 inside a time windows of intern_counter
-                if(valid[0]) signal_present_ctrl[0] <= 1'b1;
-                if(valid[1]) signal_present_ctrl[1] <= 1'b1;
-                if(valid[2]) signal_present_ctrl[2] <= 1'b1;
-                if(valid[3]) signal_present_ctrl[3] <= 1'b1;
+                if(sync[0]) signal_present_ctrl[0] <= 1'b1;
+                if(sync[1]) signal_present_ctrl[1] <= 1'b1;
+                if(sync[2]) signal_present_ctrl[2] <= 1'b1;
+                if(sync[3]) signal_present_ctrl[3] <= 1'b1;
             end
         end
     end
 
     always @(posedge clk or negedge rstn) begin : MAIN_ALWAYS
         if(!rstn) begin
-            state                     <= IDLE;
+            //state                     <= IDLE;
             active_channel            <= CHANNEL1;
-            en_module                 <= 1'b0;
+            //en_module                 <= 1'b0;
             reset_packet_loss_counter <= 1'b0;
         end
-        else begin
+        else 
+            if(mm_write_en) begin
+                reset_packet_loss_counter <= 1'b1;
+                if(manual_enable) active_channel <= manual_channel;
+                else              active_channel <= channel_priority[1:0];
+            end
+            else begin
+                if(manual_enable) active_channel <= manual_channel;
+                else begin
+                    reset_packet_loss_counter <= 1'b0;
+                    if (intern_counter > reset_timer-1) begin
+                        active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count,signal_present_ctrl);
+                        reset_packet_loss_counter <= 1'b1;
+                    end
+                end
+            end
+/*
             case(state)
                 //Waiting config parameters
                 IDLE: begin
@@ -174,6 +191,7 @@ module main_control(
 
             endcase
         end
+            */
     end
 
     function [1:0] select_new_channel(

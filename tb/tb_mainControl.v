@@ -7,6 +7,7 @@ module tb();
     reg         rst;
     reg  [3:0]  valid;     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
     reg  [31:0] err_count; // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
+    reg  [3:0]  sync;
 
     // Memory_mapped pins
     reg         mm_write_en;
@@ -17,7 +18,7 @@ module tb();
 
     // Main_control wire
     wire [1:0]  mux_control;
-    wire        en_mux;
+    //wire        en_mux;
     wire        en_reset_counter;
 
     main_control uut (
@@ -26,6 +27,7 @@ module tb();
         .rstn(!rst),
         .valid(valid),     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
         .err_count(err_count), // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
+        .sync(sync),
 
         // Memory_mapped pins
         .mm_write_en(mm_write_en),
@@ -36,7 +38,7 @@ module tb();
 
         // Main_control output
         .mux_control(mux_control),
-        .en_mux(en_mux),
+        //.en_mux(en_mux),
         .en_reset_counter(en_reset_counter)
     );
 
@@ -70,7 +72,7 @@ module tb();
             err_count[15:8]  = ($random % 6 + 6) % 6;
             err_count[23:16] = ($random % 6 + 6) % 6;
             err_count[31:24] = ($random % 6 + 6) % 6;
-            valid            = $random;
+            sync             = $random;
             #20;
         end
     end
@@ -81,7 +83,7 @@ module tb();
         manual_channel   = 00;
         channel_priority = 8'b11_01_00_10;
         reset_timer      = 20'd30;
-        //valid            = 4'b1111;
+        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #520;
         $display("Mudanca de parametros %t",$time);
@@ -90,7 +92,7 @@ module tb();
         manual_channel   = 10;
         channel_priority = 8'b11_01_10_00;
         reset_timer      = 20'd30;
-        //valid            = 4'b1111;
+        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #500;
         fallback_enable  = 0;
@@ -98,7 +100,7 @@ module tb();
         manual_channel   = 11;
         channel_priority = 8'b00_11_10_01;
         reset_timer      = 20'd50;
-        //valid            = 4'b1111;
+        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #2000;
         $stop;
