@@ -23,7 +23,7 @@ module tb();
     main_control uut (
         // Main_control inputs
         .clk(clk),
-        .rst(rst),
+        .rstn(!rst),
         .valid(valid),     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
         .err_count(err_count), // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
 

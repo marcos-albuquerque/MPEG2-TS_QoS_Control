@@ -1,6 +1,6 @@
 module memory_mapped (
     input              clk,
-    input              rst,
+    input              rstn,
 
     // Memory-mapped interface
     input              mm_write_en,
@@ -33,8 +33,8 @@ module memory_mapped (
     assign reset_timer           = mm_reg[0][31:12];
 
     // Writing and Reading in memory_mapped
-    always @(posedge clk or posedge rst) begin
-        if (rst) begin
+    always @(posedge clk or negedge rstn) begin
+        if (!rstn) begin
             mm_reg[0]    <= 0;
             mm_reg[1]    <= 0;
             mm_reg[2]    <= 0;
