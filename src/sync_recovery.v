@@ -7,7 +7,7 @@ module sync_recovery(
 );
 
     localparam IDLE = 0, CONTAGEM = 1, VERIFICACAO = 2, SYNC_FOUND = 3;
-    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd200;
+    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd4;
 
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
@@ -17,7 +17,7 @@ module sync_recovery(
 
     always@(posedge clk or negedge rst) begin
         if (!rst) begin
-            
+            state = IDLE;
         end else if (byte_valid) begin
             case (state)
                 IDLE: begin
@@ -54,7 +54,7 @@ module sync_recovery(
     end
 
 
-    always@(posedge clk or negedge rst) begin
+    always@(posedge clk) begin
         case (state)
             IDLE: begin
                 sync <= 1'b0;
@@ -70,12 +70,18 @@ module sync_recovery(
 
             VERIFICACAO: begin
                 COUNT_BYTES <= 8'd1;
-                COUNT_REPS <= COUNT_REPS + 1'b1;
+                //COUNT_REPS <= COUNT_REPS + 1'b1;
                 if (byte_in == SYNC_BYTE && sync) valid_packet <= 1'b1;
+                if (byte_in == SYNC_BYTE) begin
+                    COUNT_REPS <= COUNT_REPS + 1'b1;
+                end else begin
+                    COUNT_REPS <= 1'b0;
+                end
+                
+                
             end
 
             SYNC_FOUND: begin
-                valid_packet <= 1'b1;
                 COUNT_REPS <= 4'd0;
                 COUNT_BYTES <= 8'd2;
                 sync <= 1'b1;
@@ -102,7 +108,7 @@ module top_module_sync(
 
 );
 
-    sync_module v1(
+    sync_recovery v1(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_1),
@@ -111,7 +117,7 @@ module top_module_sync(
                     .byte_out(ts1)
     );
 
-    sync_module v2(
+    sync_recovery v2(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_2),
@@ -120,7 +126,7 @@ module top_module_sync(
                     .byte_out(ts2)
     );
 
-    sync_module v3(
+    sync_recovery v3(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_3),
@@ -129,7 +135,7 @@ module top_module_sync(
                     .byte_out(ts3)
     );
 
-    sync_module v4(
+    sync_recovery v4(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_4),
