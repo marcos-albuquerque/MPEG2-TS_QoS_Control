@@ -1,4 +1,4 @@
-module continuity_counter (
+module packet_loss_counter (
     input  wire        clk, // Sinal de clock, que sincroniza o funcionamento do circuito
     input  wire        rst, // Sinal de reset, que reinicia o circuito quando ativado 0
     input  wire        sync, // Sinal que indica o início de uma nova sequência de dados
