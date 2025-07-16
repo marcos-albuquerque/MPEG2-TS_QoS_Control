@@ -18,7 +18,6 @@ module tb();
 
     // Main_control wire
     wire [1:0]  mux_control;
-    //wire        en_mux;
     wire        en_reset_counter;
 
     main_control uut (
@@ -38,7 +37,6 @@ module tb();
 
         // Main_control output
         .mux_control(mux_control),
-        //.en_mux(en_mux),
         .en_reset_counter(en_reset_counter)
     );
 
