@@ -19,20 +19,37 @@ module sync_recovery(
         if (!rst) begin
             state = IDLE;
         end else if (byte_valid) begin
+
+            byte_out <= byte_in;
+
             case (state)
                 IDLE: begin
+                    sync <= 1'b0;
+                    valid_packet <= 1'b0;
+                    COUNT_BYTES <= 1'b1;
+                    COUNT_REPS <= 8'd0;
                     if (byte_in == SYNC_BYTE) begin
                         state <= CONTAGEM;
                     end 
                 end 
                     
                 CONTAGEM: begin
+                    valid_packet <= 1'b0;
+                    COUNT_BYTES <= COUNT_BYTES + 1'b1;
                     if (COUNT_BYTES == 8'd187) begin
                         state <= VERIFICACAO;
                     end
                 end
 
                 VERIFICACAO: begin
+                    COUNT_BYTES <= 8'd1;
+                    //COUNT_REPS <= COUNT_REPS + 1'b1;
+                    if (byte_in == SYNC_BYTE && sync) valid_packet <= 1'b1;
+                    if (byte_in == SYNC_BYTE) begin
+                        COUNT_REPS <= COUNT_REPS + 1'b1;
+                    end else begin
+                        COUNT_REPS <= 1'b0;
+                    end
                     if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
                         state <= CONTAGEM;
                     end else if (byte_in == SYNC_BYTE && COUNT_REPS >= MAX_REPS) begin
@@ -44,6 +61,9 @@ module sync_recovery(
                 end
 
                 SYNC_FOUND: begin
+                    COUNT_REPS <= 4'd0;
+                    COUNT_BYTES <= 8'd2;
+                    sync <= 1'b1;
                     state <= CONTAGEM;
                 end
 
@@ -51,48 +71,6 @@ module sync_recovery(
             endcase
 
         end
-    end
-
-
-    always@(posedge clk) begin
-        case (state)
-            IDLE: begin
-                sync <= 1'b0;
-                valid_packet <= 1'b0;
-                COUNT_BYTES <= 1'b1;
-                COUNT_REPS <= 8'd0;
-            end
-
-            CONTAGEM: begin
-                valid_packet <= 1'b0;
-                COUNT_BYTES <= COUNT_BYTES + 1'b1;
-            end
-
-            VERIFICACAO: begin
-                COUNT_BYTES <= 8'd1;
-                //COUNT_REPS <= COUNT_REPS + 1'b1;
-                if (byte_in == SYNC_BYTE && sync) valid_packet <= 1'b1;
-                if (byte_in == SYNC_BYTE) begin
-                    COUNT_REPS <= COUNT_REPS + 1'b1;
-                end else begin
-                    COUNT_REPS <= 1'b0;
-                end
-                
-                
-            end
-
-            SYNC_FOUND: begin
-                COUNT_REPS <= 4'd0;
-                COUNT_BYTES <= 8'd2;
-                sync <= 1'b1;
-            end
-        endcase
-
-        
-    end
-
-    always@(posedge clk) begin
-        byte_out <= byte_in;
     end
 
 endmodule
