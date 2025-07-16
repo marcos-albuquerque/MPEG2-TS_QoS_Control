@@ -1,6 +1,6 @@
 `timescale 1us / 100ns
 
-module tb();
+module main_control_tb();
 
     // Main_control regs
     reg         clk;
