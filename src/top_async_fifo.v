@@ -1,93 +1,53 @@
-/*
- * top_fifo
- * Combinação de 4 FIFO's assincronas que utiliza código gray
- *
- * @input wclk            - Clock de escrita.
- * @input wrst_n          - Reset assíncrono de escrita.
- * @input wen             - Habilita a escrita de dados.
- * @input wdata           - Dados a serem escritos na FIFO.
- * @ouput wfull           - Indica que a FIFO está cheia 
- * 
- * @input rrst_n          - Reset assíncrono para o domínio de leitura.
- * @input ren             - Habilita a leitura de dados.
- * @output rdata          - Dados lidos da FIFO.
- * @output rempty         - Indica que a FIFO está vazia.
- */
+module top_mux_fifo (  
+    input wire rst,  
+    input wire clk2,  // Clock 100MHz
+    input wire [7:0] data_s1, data_s2, data_s3, data_s4, 
+    input wire [3:0] valid_in,  // MUX e divider
+    input wire [3:0] sync_in,  
+    input wire [1:0] mux_ctrl,  
+    input wire en_mux, 
+    input wire r_en,  // Read enable FIFO (de downstream)
+    output wire [9:0] data_out_final  // Saída final em 27MHz: [9:2]=DATA, [1]=VALID, [0]=SYNC
+);
 
+    wire [7:0] mux_data_out;  
+    wire mux_valid_out;  
+    wire mux_sync_out;  
+    wire clk1;  // 27MHz do divider para rclk da FIFO
+    wire [9:0] fifo_data_input;  // mux_data_out, mux_valid_out, mux_sync_out
 
-module top_fifo #(
-    parameter DATA_WIDTH = 8,
-    parameter ADDR_WIDTH = 4
-  ) (
-    // Escrita (27 MHz)
-    input                           wclk,
-    input                           wrst_n,
-    input      [DATA_WIDTH-1:0]     wdata1,wdata2,wdata3,wdata4,
-    input                           valid1,valid2,valid3,valid4,
+  
+    mux_data mux_data_inst (
+        .data_s1(data_s1), .data_s2(data_s2), .data_s3(data_s3), .data_s4(data_s4),
+        .mux_ctrl(mux_ctrl), .en_mux(en_mux), .data_out(mux_data_out)
+    );
 
-    // Leitura (100 MHz)
-    input                           rclk,
-    input                           rrst_n,
-    output reg [DATA_WIDTH-1:0]     rdata1,rdata2,rdata3,rdata4,
-  );
+    mux_valid mux_valid_inst (
+        .valid(valid_in), .mux_ctrl(mux_ctrl), .en_mux(en_mux), .valid_out(mux_valid_out)
+    );
 
-  fifo_controller # (
-                    .DATA_WIDTH(DATA_WIDTH),
-                    .ADDR_WIDTH(ADDR_WIDTH)
-                  )
-                  fifo_controller_inst1 (
-                    .wclk(wclk),
-                    .wrst_n(wrst_n),
-                    .wdata(wdata1),
-                    .valid(valid1),
-                    .rclk(rclk),
-                    .rrst_n(rrst_n),
-                    .rdata(rdata1)
-                  );
+    mux_sync mux_sync_inst (
+        .sync(sync_in), .mux_ctrl(mux_ctrl), .en_mux(en_mux), .sync_out(mux_sync_out)
+    );
 
-  fifo_controller # (
-                    .DATA_WIDTH(DATA_WIDTH),
-                    .ADDR_WIDTH(ADDR_WIDTH)
-                  )
-                  fifo_controller_inst1 (
-                    .wclk(wclk),
-                    .wrst_n(wrst_n),
-                    .wdata(wdata2),
-                    .valid(valid2),
-                    .rclk(rclk),
-                    .rrst_n(rrst_n),
-                    .rdata(rdata2)
-                  );
+    // Clock Divider (gera clk1=27MHz)
+    clock_divider divider_inst (
+        .rst(rst), .clk2(clk2), .valid(valid_in), .mux_ctrl(mux_ctrl), .clk_out(clk1)
+    );
 
-  fifo_controller # (
-                    .DATA_WIDTH(DATA_WIDTH),
-                    .ADDR_WIDTH(ADDR_WIDTH)
-                  )
-                  fifo_controller_inst1 (
-                    .wclk(wclk),
-                    .wrst_n(wrst_n),
-                    .wdata(wdata3),
-                    .valid(valid3),
-                    .rclk(rclk),
-                    .rrst_n(rrst_n),
-                    .rdata(rdata3)
-                  );
+    // Concatena saídas MUX para input da FIFO
+    assign fifo_data_input = {mux_data_out, mux_valid_out, mux_sync_out};
 
-  fifo_controller # (
-                    .DATA_WIDTH(DATA_WIDTH),
-                    .ADDR_WIDTH(ADDR_WIDTH)
-                  )
-                  fifo_controller_inst1 (
-                    .wclk(wclk),
-                    .wrst_n(wrst_n),
-                    .wdata(wdata4),
-                    .valid(valid4),
-                    .rclk(rclk),
-                    .rrst_n(rrst_n),
-                    .rdata(rdata4)
-                  );
-
-
-
+    // FIFO
+    fifo_async fifo_inst (
+        .wclk(clk2),  // Escrita em 100MHz.
+        .rclk(clk1),  // Leitura em 27MHz.
+        .rst(rst),  
+        .w_en(en_mux),  // Usa en_mux como w_en (assumindo que escreve quando MUX habilitado).
+        .r_en(r_en),  // Ativo quando downstream pronto
+        .data_input(fifo_data_input),  
+        .data_out(data_out_final),  
+        .full(fifo_full), .empty(fifo_empty)
+    );
 
 endmodule

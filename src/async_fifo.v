@@ -1,209 +1,80 @@
-/*
- * async_fifo
- * FIFO assincrona que utiliza código gray
- *
- * @input wclk            - Clock de escrita.
- * @input wrst_n          - Reset assíncrono de escrita.
- * @input wen             - Habilita a escrita de dados.
- * @input wdata           - Dados a serem escritos na FIFO.
- * @ouput wfull           - Indica que a FIFO está cheia 
- * 
- * @input rrst_n          - Reset assíncrono para o domínio de leitura.
- * @input ren             - Habilita a leitura de dados.
- * @output rdata          - Dados lidos da FIFO.
- * @output rempty         - Indica que a FIFO está vazia.
- * @output rcnt           - Indica quants escritas foram feitas
- */
+module fifo_async (  // FIFO assíncrona para sincronizar saídas MUX para 27MHz.
+    parameter DATA_WIDTH = 10,  
+    parameter FIFO_DEPTH = 4,  
+    parameter ADDR_WIDTH = 2   
+) (
+    input wire wclk,  // Clock escrita 
+    input wire rclk,  // Clock leitura
+    input wire rst,  
+    input wire w_en,  // Write enable (pode vir de en_mux ou valid_out)
+    input wire r_en,  // Read enable (ativo quando downstream pronto)
+    input wire [DATA_WIDTH-1:0] data_input,  
+    output reg [DATA_WIDTH-1:0] data_out,  // [9:2]=DATA, [1]=VALID, [0]=SYNC
+    output wire full,  // FIFO cheia
+    output wire empty  // FIFO vazia
+)
+    reg [DATA_WIDTH-1:0] mem [0:FIFO_DEPTH-1];  
+    reg [ADDR_WIDTH:0] w_ptr_bin, r_ptr_bin;  
+    reg [ADDR_WIDTH:0] w_ptr_gray, r_ptr_gray;  
 
-module async_fifo #(
-    parameter DATA_WIDTH = 8,
-    parameter ADDR_WIDTH = 4
-  ) (
-    // Escrita (27 MHz)
-    input                           wclk,
-    input                           wrst_n,
-    input                           wen,
-    input      [DATA_WIDTH-1:0]     wdata,
-    output reg                      wfull,
+   
+    reg [ADDR_WIDTH:0] w_ptr_gray_sync1, w_ptr_gray_sync2;  // w_ptr sync para rclk
+    reg [ADDR_WIDTH:0] r_ptr_gray_sync1, r_ptr_gray_sync2;  // r_ptr sync para wclk
 
-    // Leitura (100 MHz)
-    input                           rclk,
-    input                           rrst_n,
-    input                           ren,
-    output reg [DATA_WIDTH-1:0]     rdata,
-    output reg                      rempty,
-    output wire [ADDR_WIDTH:0]      rcnt
-  );
+    // Binário para Gray
+    function [ADDR_WIDTH:0] bin_to_gray;
+        input [ADDR_WIDTH:0] bin;
+        bin_to_gray = bin ^ (bin >> 1);
+    endfunction
 
-  localparam DEPTH = 1 << ADDR_WIDTH;
-
-  // Ponteiros de escrita
-  reg [ADDR_WIDTH:0] wptr_bin;
-  reg [ADDR_WIDTH:0] wptr_bin_next;
-  reg [ADDR_WIDTH:0] wptr_gray;
-  reg [ADDR_WIDTH:0] wptr_gray_next;
-  reg [ADDR_WIDTH-1:0] waddr;
-
-  //Ponteiros de sincronização de leitura para domínio de escrita
-  reg [ADDR_WIDTH:0] rsync_r2w_ptr1,rsync_r2w_ptr2;
-
-  //Sinais de controle da escrita
-  wire we;
-  wire wfull_val;
-
-  reg  [ADDR_WIDTH:0] rptr_bin;
-  wire [ADDR_WIDTH:0] rptr_bin_next;
-  reg [ADDR_WIDTH:0] rptr_gray;
-  wire [ADDR_WIDTH:0] rptr_gray_next;
-  wire [ADDR_WIDTH-1:0] raddr;
-
-
-  wire rempty_val;
-
-  //Ponteiros de sincronização de leitura para domínio de escrita
-  reg [ADDR_WIDTH:0] wsync_w2r_ptr1;
-  reg [ADDR_WIDTH:0] wsync_w2r_ptr2;
-
-  // Memória da FIFO
-  reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
-
-  assign we = !wfull && wen  ;
-  assign waddr = wptr_bin[ADDR_WIDTH-1:0];
-  assign wptr_bin_next = wptr_bin + we;
-  assign wptr_gray_next = (wptr_bin_next >> 1) ^ wptr_bin_next;
-
-
-  assign wfull_val = (wptr_gray_next == {~rsync_r2w_ptr2[ADDR_WIDTH:ADDR_WIDTH-1],
-                                         rsync_r2w_ptr2[ADDR_WIDTH-2:0]});
-
-  assign re = !rempty && ren ;
-  assign raddr = rptr_bin[ADDR_WIDTH-1:0];
-  assign rptr_bin_next = rptr_bin + re;
-  assign rptr_gray_next = (rptr_bin_next >> 1) ^ rptr_bin_next;
-
-  assign rempty_val = (rptr_gray == wsync_w2r_ptr2);
-
-  //---- Lógica escrita -----//
-
-  // Escrita na memória
-  always @(posedge wclk)
-  begin
-    if (we)
-    begin
-      mem[waddr] <= wdata;
+    // Escrita
+    always @(posedge wclk or posedge rst) begin
+        if (rst) begin
+            w_ptr_bin <= 0;
+            w_ptr_gray <= 0;
+        end else if (w_en && !full) begin
+            mem[w_ptr_bin[ADDR_WIDTH-1:0]] <= data_input;
+            w_ptr_bin <= w_ptr_bin + 1;
+            w_ptr_gray <= bin_to_gray(w_ptr_bin + 1);
+        end
     end
-  end
 
-  // Sincronização Leitura -> Escrita
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      {rsync_r2w_ptr2, rsync_r2w_ptr1} <= 0;
+    // Leitura
+    always @(posedge rclk or posedge rst) begin
+        if (rst) begin
+            r_ptr_bin <= 0;
+            r_ptr_gray <= 0;
+            data_out <= 0;
+        end else if (r_en && !empty) begin
+            data_out <= mem[r_ptr_bin[ADDR_WIDTH-1:0]];
+            r_ptr_bin <= r_ptr_bin + 1;
+            r_ptr_gray <= bin_to_gray(r_ptr_bin + 1);
+        end
     end
-    else
-    begin
-      {rsync_r2w_ptr2, rsync_r2w_ptr1} <= {rsync_r2w_ptr1,rptr_gray};
-    end
-  end
 
-  // Atualização dos ponteiros de escrita
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      wptr_bin  <= 0;
-      wptr_gray <= 0; // Ponteiro Gray atual de escrita
+    // Sync w_ptr para rclk
+    always @(posedge rclk or posedge rst) begin
+        if (rst) begin
+            w_ptr_gray_sync1 <= 0;
+            w_ptr_gray_sync2 <= 0;
+        end else begin
+            w_ptr_gray_sync1 <= w_ptr_gray;
+            w_ptr_gray_sync2 <= w_ptr_gray_sync1;
+        end
     end
-    else
-    begin
-      wptr_bin  <= wptr_bin_next;
-      wptr_gray <= wptr_gray_next;
-    end
-  end
 
-  // Atualização do sinal wfull
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      wfull <= 0;
+    // Sync r_ptr para wclk
+    always @(posedge wclk or posedge rst) begin
+        if (rst) begin
+            r_ptr_gray_sync1 <= 0;
+            r_ptr_gray_sync2 <= 0;
+        end else begin
+            r_ptr_gray_sync1 <= r_ptr_gray;
+            r_ptr_gray_sync2 <= r_ptr_gray_sync1;
+        end
     end
-    else
-    begin
-      wfull <= wfull_val;
-    end
-  end
 
-
-  //---- Lógica leitura -----//
-
-  //Contagem de elementos na FIFO
-  reg [ADDR_WIDTH:0] wsync_w2r_ptr_bin;
-  assign wsync_w2r_ptr_bin[ADDR_WIDTH] = wsync_w2r_ptr2[ADDR_WIDTH];
-  genvar i;
-  generate
-    for (i = ADDR_WIDTH - 1; i >= 0; i = i - 1)
-    begin
-      assign wsync_w2r_ptr_bin[i] = wsync_w2r_ptr_bin[i+1] ^ wsync_w2r_ptr2[i];
-    end
-  endgenerate
-
-  assign rcnt = wsync_w2r_ptr_bin - rptr_bin;
-
-
-  // Leitura da memória
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      rdata <= {DATA_WIDTH{1'b0}};
-    end
-    else if (re)
-    begin
-      rdata <= mem[raddr];
-    end
-  end
-
-  // Sincronização Escrita -> Leitura
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      {wsync_w2r_ptr2, wsync_w2r_ptr1} <= 0;
-    end
-    else
-    begin
-      {wsync_w2r_ptr2, wsync_w2r_ptr1} <= {wsync_w2r_ptr1,wptr_gray};
-    end
-  end
-
-  // Atualização dos ponteiros de leitura
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      rptr_bin  <= 0;
-      rptr_gray <= 0; // Ponteiro Gray atual de leitura
-    end
-    else
-    begin
-      rptr_bin  <= rptr_bin_next;
-      rptr_gray <= rptr_gray_next;
-    end
-  end
-
-  // Atualização da saída rempty
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      rempty <= 1'b1;
-    end
-    else
-    begin
-      rempty <= rempty_val;
-    end
-  end
-
+   
+    assign empty = (r_ptr_gray == w_ptr_gray_sync2);
+    assign full = (w_ptr_gray == {~r_ptr_gray_sync2[ADDR_WIDTH:ADDR_WIDTH-1], r_ptr_gray_sync2[ADDR_WIDTH-2:0]});
 endmodule
