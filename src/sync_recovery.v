@@ -2,7 +2,8 @@ module sync_recovery(
     input clk, rst,
     input [7:0] byte_in,
     input byte_valid,
-    output reg valid_packet,
+    output reg sync,
+    output valid,
     output reg [7:0] byte_out
 );
 
@@ -12,20 +13,20 @@ module sync_recovery(
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
     reg [7:0] COUNT_REPS;
-    reg [7:0] buffer[187:0];
     reg sync;
 
     always@(posedge clk or negedge rst) begin
         if (!rst) begin
             state = IDLE;
+            valid <= 1'b0;
         end else if (byte_valid) begin
-
+            valid <= 1'b1;
             byte_out <= byte_in;
 
             case (state)
                 IDLE: begin
                     sync <= 1'b0;
-                    valid_packet <= 1'b0;
+                    sync <= 1'b0;
                     COUNT_BYTES <= 1'b1;
                     COUNT_REPS <= 8'd0;
                     if (byte_in == SYNC_BYTE) begin
@@ -34,7 +35,7 @@ module sync_recovery(
                 end 
                     
                 CONTAGEM: begin
-                    valid_packet <= 1'b0;
+                    sync <= 1'b0;
                     COUNT_BYTES <= COUNT_BYTES + 1'b1;
                     if (COUNT_BYTES == 8'd187) begin
                         state <= VERIFICACAO;
@@ -44,7 +45,7 @@ module sync_recovery(
                 VERIFICACAO: begin
                     COUNT_BYTES <= 8'd1;
                     //COUNT_REPS <= COUNT_REPS + 1'b1;
-                    if (byte_in == SYNC_BYTE && sync) valid_packet <= 1'b1;
+                    if (byte_in == SYNC_BYTE && sync) sync <= 1'b1;
                     if (byte_in == SYNC_BYTE) begin
                         COUNT_REPS <= COUNT_REPS + 1'b1;
                     end else begin
@@ -69,8 +70,7 @@ module sync_recovery(
 
                 default: state <= IDLE;
             endcase
-
-        end
+        end else valid <= 1'b0;
     end
 
 endmodule
@@ -82,6 +82,7 @@ module top_module_sync(
     input clk, rst,
     input [7:0] byte_1, byte_2, byte_3, byte_4,
     output [7:0] ts1, ts2, ts3, ts4,
+    output sync_1, sync_2, sync_3, sync_4,
     output valid_1, valid_2, valid_3, valid_4
 
 );
@@ -90,8 +91,8 @@ module top_module_sync(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_1),
-                    .byte_valid(1'b1),
-                    .valid_packet(valid_1),
+                    .byte_valid(valid_1),
+                    .sync(sync_1),
                     .byte_out(ts1)
     );
 
@@ -99,8 +100,8 @@ module top_module_sync(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_2),
-                    .byte_valid(1'b1),
-                    .valid_packet(valid_2),
+                    .byte_valid(valid_2),
+                    .sync(sync_2),
                     .byte_out(ts2)
     );
 
@@ -108,8 +109,8 @@ module top_module_sync(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_3),
-                    .byte_valid(1'b1),
-                    .valid_packet(valid_3),
+                    .byte_valid(valid_3),
+                    .sync(sync_3),
                     .byte_out(ts3)
     );
 
@@ -117,8 +118,8 @@ module top_module_sync(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_4),
-                    .byte_valid(1'b1),
-                    .valid_packet(valid_4),
+                    .byte_valid(valid_4),
+                    .sync(sync_4),
                     .byte_out(ts4)
     );
 

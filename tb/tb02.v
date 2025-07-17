@@ -42,6 +42,7 @@ module top_sync_recovery_tb();
 
     wire valid_1, valid_2, valid_3, valid_4;
     wire [7:0] byte_1, byte_2, byte_3, byte_4;
+    wire sync_1, sync_2, sync_3, sync_4;
 
     top_module_sync sync_recovery_inst1(
                     .clk(wclk), 
@@ -50,6 +51,10 @@ module top_sync_recovery_tb();
                     .byte_2(byte_data2),
                     .byte_3(byte_data3),
                     .byte_4(byte_data4),
+                    .sync_1(sync_1), 
+                    .sync_2(sync_2), 
+                    .sync_3(sync_3), 
+                    .sync_4(sync_4),
                     .valid_1(valid_1),
                     .valid_2(valid_2),
                     .valid_3(valid_3),
