@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module testbench_v2_fifo();
+module tb_top_fifo();
   localparam real DATA_FREQUENCY = 100e6;
   localparam real SYS_FREQUENCY = 27e6;       
   localparam FILE_NAME1 = "tsdata1_loss.ts";
