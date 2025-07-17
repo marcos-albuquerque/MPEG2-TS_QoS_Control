@@ -10,6 +10,7 @@ module stimulus_from_file #(
     // parameter DEPTH      = 
 )(
     input clk,
+    output reg [3:0] valid,
     output [DATA_WIDTH-1:0] byte_data1,     // ts data
     output [DATA_WIDTH-1:0] byte_data2,
     output [DATA_WIDTH-1:0] byte_data3,
@@ -57,19 +58,25 @@ module stimulus_from_file #(
             // Keep reading lines until EOF is found
             while (! $feof(fh1)) begin
                 @(posedge clk)
+                    valid = 4'd0; 
+                @(posedge clk)
                     byte_data1_ = $fgetc(fh1);
+                    valid[0] = 1'b1;
                     `ifdef DEBUG
                         $display("Data1: %h", byte_data1);
                     `endif
                     byte_data2_ = $fgetc(fh2);
+                    valid[1] = 1'b1;
                     `ifdef DEBUG
                         $display("Data2: %h", byte_data2);
                     `endif
                     byte_data3_ = $fgetc(fh3);
+                    valid[2] = 1'b1;
                     `ifdef DEBUG
                         $display("Data3: %h", byte_data3);
                     `endif
                     byte_data4_ = $fgetc(fh4);
+                    valid[3] = 1'b1;
                     `ifdef DEBUG
                         $display("Data4: %h", byte_data4);
                         $display("EOF: %0d", !$feof(fh1));

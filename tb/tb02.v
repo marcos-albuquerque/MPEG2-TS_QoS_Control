@@ -24,6 +24,8 @@ module top_sync_recovery_tb();
     clock_generator #(DATA_FREQUENCY, 1) CLOCK100M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK27M(.clk(rclk));
 
+    wire [3:0] valid;
+
     stimulus_from_file # (
         .FILE_NAME1(FILE_NAME1),
         .FILE_NAME2(FILE_NAME2),
@@ -33,13 +35,14 @@ module top_sync_recovery_tb();
     )
     stimulus_from_file_inst (
         .clk(wclk),
+        .valid(valid),
         .byte_data1(byte_data1),
         .byte_data2(byte_data2),
         .byte_data3(byte_data3),
         .byte_data4(byte_data4)
     ); 
 
-    reg byte_valid1, byte_valid2, byte_valid_3, byte_valid4;
+    
     wire valid_1, valid_2, valid_3, valid_4;
     wire [7:0] byte_1, byte_2, byte_3, byte_4;
     wire sync_1, sync_2, sync_3, sync_4;
@@ -51,10 +54,10 @@ module top_sync_recovery_tb();
                     .byte_2(byte_data2),
                     .byte_3(byte_data3),
                     .byte_4(byte_data4),
-                    .byte_valid1(byte_valid1),
-                    .byte_valid2(byte_valid2),
-                    .byte_valid3(byte_valid3),
-                    .byte_valid4(byte_valid4),
+                    .byte_valid1(valid[0]),
+                    .byte_valid2(valid[1]),
+                    .byte_valid3(valid[2]),
+                    .byte_valid4(valid[3]),
                     .sync_1(sync_1), 
                     .sync_2(sync_2), 
                     .sync_3(sync_3), 
@@ -72,10 +75,6 @@ module top_sync_recovery_tb();
     initial begin
         reset_n = 1'b0; #40;
         reset_n = 1'b1; 
-        byte_valid1 = 1'b1; 
-        byte_valid2 = 1'b1;
-        byte_valid3 = 1'b1;
-        byte_valid4 = 1'b1;
 
         // ...
     end

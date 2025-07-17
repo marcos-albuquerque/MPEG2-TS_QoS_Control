@@ -3,7 +3,7 @@ module sync_recovery(
     input [7:0] byte_in,
     input byte_valid,
     output reg sync,
-    output valid,
+    output reg valid,
     output reg [7:0] byte_out
 );
 
@@ -13,6 +13,7 @@ module sync_recovery(
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
     reg [7:0] COUNT_REPS;
+    reg flag;
 
     always@(posedge clk or negedge rst) begin
         if (!rst) begin
@@ -46,7 +47,7 @@ module sync_recovery(
                     //COUNT_REPS <= COUNT_REPS + 1'b1;
 
 
-                    if (byte_in == SYNC_BYTE && sync) sync <= 1'b1;
+                    if (byte_in == SYNC_BYTE && flag) sync <= 1'b1;
 
 
                     if (byte_in == SYNC_BYTE) begin
@@ -68,15 +69,18 @@ module sync_recovery(
                 SYNC_FOUND: begin
                     COUNT_REPS <= 4'd0;
                     COUNT_BYTES <= 8'd2;
-                    sync <= 1'b1;
+                    flag <= 1'b1;
                     state <= CONTAGEM;
                 end
 
                 default: state <= IDLE;
             endcase
-        end else valid <= 1'b0;
+        end else begin 
+            valid <= 1'b0;
+            byte_out <= 1'b0;
+            sync <= 1'b0;
+        end
     end
-
 endmodule
 
 
