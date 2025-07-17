@@ -13,7 +13,6 @@ module sync_recovery(
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
     reg [7:0] COUNT_REPS;
-    reg sync;
 
     always@(posedge clk or negedge rst) begin
         if (!rst) begin
@@ -45,17 +44,22 @@ module sync_recovery(
                 VERIFICACAO: begin
                     COUNT_BYTES <= 8'd1;
                     //COUNT_REPS <= COUNT_REPS + 1'b1;
+
+
                     if (byte_in == SYNC_BYTE && sync) sync <= 1'b1;
+
+
                     if (byte_in == SYNC_BYTE) begin
                         COUNT_REPS <= COUNT_REPS + 1'b1;
                     end else begin
                         COUNT_REPS <= 1'b0;
                     end
+
+
                     if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
                         state <= CONTAGEM;
                     end else if (byte_in == SYNC_BYTE && COUNT_REPS >= MAX_REPS) begin
                         state <= SYNC_FOUND;
-                        $display(state);
                     end else  begin
                         state <= IDLE;
                     end 
@@ -81,6 +85,7 @@ endmodule
 module top_module_sync(
     input clk, rst,
     input [7:0] byte_1, byte_2, byte_3, byte_4,
+    input byte_valid1, byte_valid2, byte_valid3, byte_valid4,
     output [7:0] ts1, ts2, ts3, ts4,
     output sync_1, sync_2, sync_3, sync_4,
     output valid_1, valid_2, valid_3, valid_4
@@ -91,36 +96,40 @@ module top_module_sync(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_1),
-                    .byte_valid(valid_1),
+                    .byte_valid(byte_valid1),
                     .sync(sync_1),
-                    .byte_out(ts1)
+                    .byte_out(ts1),
+                    .valid(valid_1)
     );
 
     sync_recovery v2(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_2),
-                    .byte_valid(valid_2),
+                    .byte_valid(byte_valid2),
                     .sync(sync_2),
-                    .byte_out(ts2)
+                    .byte_out(ts2),
+                    .valid(valid_2)
     );
 
     sync_recovery v3(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_3),
-                    .byte_valid(valid_3),
+                    .byte_valid(byte_valid3),
                     .sync(sync_3),
-                    .byte_out(ts3)
+                    .byte_out(ts3),
+                    .valid(valid_3)
     );
 
     sync_recovery v4(
                     .clk(clk), 
                     .rst(rst),
                     .byte_in(byte_4),
-                    .byte_valid(valid_4),
+                    .byte_valid(byte_valid4),
                     .sync(sync_4),
-                    .byte_out(ts4)
+                    .byte_out(ts4),
+                    .valid(valid_4)
     );
 
 

@@ -39,7 +39,7 @@ module top_sync_recovery_tb();
         .byte_data4(byte_data4)
     ); 
 
-
+    reg byte_valid1, byte_valid2, byte_valid_3, byte_valid4;
     wire valid_1, valid_2, valid_3, valid_4;
     wire [7:0] byte_1, byte_2, byte_3, byte_4;
     wire sync_1, sync_2, sync_3, sync_4;
@@ -51,6 +51,10 @@ module top_sync_recovery_tb();
                     .byte_2(byte_data2),
                     .byte_3(byte_data3),
                     .byte_4(byte_data4),
+                    .byte_valid1(byte_valid1),
+                    .byte_valid2(byte_valid2),
+                    .byte_valid3(byte_valid3),
+                    .byte_valid4(byte_valid4),
                     .sync_1(sync_1), 
                     .sync_2(sync_2), 
                     .sync_3(sync_3), 
@@ -67,7 +71,11 @@ module top_sync_recovery_tb();
 
     initial begin
         reset_n = 1'b0; #40;
-        reset_n = 1'b1;
+        reset_n = 1'b1; 
+        byte_valid1 = 1'b1; 
+        byte_valid2 = 1'b1;
+        byte_valid3 = 1'b1;
+        byte_valid4 = 1'b1;
 
         // ...
     end
