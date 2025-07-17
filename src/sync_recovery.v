@@ -8,7 +8,7 @@ module sync_recovery(
 );
 
     localparam IDLE = 0, CONTAGEM = 1, VERIFICACAO = 2, SYNC_FOUND = 3;
-    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd4;
+    localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd255;
 
     reg [1:0] state;
     reg [7:0] COUNT_BYTES;
@@ -19,6 +19,8 @@ module sync_recovery(
         if (!rst) begin
             state = IDLE;
             valid <= 1'b0;
+            byte_out <= 1'b0;
+            sync = 1'b0;
         end else if (byte_valid) begin
             valid <= 1'b1;
             byte_out <= byte_in;
