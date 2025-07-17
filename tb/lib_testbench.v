@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+//`define DEBUG //Enable display
 
 module stimulus_from_file #(
     parameter FILE_NAME1 = "tsdata1_loss.ts",
@@ -9,6 +10,7 @@ module stimulus_from_file #(
     // parameter DEPTH      = 
 )(
     input clk,
+    output reg [3:0] valid,
     output [DATA_WIDTH-1:0] byte_data1,     // ts data
     output [DATA_WIDTH-1:0] byte_data2,
     output [DATA_WIDTH-1:0] byte_data3,
@@ -33,30 +35,50 @@ module stimulus_from_file #(
         fh4 = $fopen(FILE_NAME4, "rb");
 
         if (!fh1) begin
-            $display("Error to open file: ", FILE_NAME1);
+            `ifdef DEBUG
+                $display("Error to open file: ", FILE_NAME1);
+            `endif
             $finish();
         end else if (!fh2) begin
-            $display("Error to open file: ", FILE_NAME2);
+            `ifdef DEBUG
+                $display("Error to open file: ", FILE_NAME2);
+            `endif
             $finish();
         end else if (!fh3) begin
-            $display("Error to open file: ", FILE_NAME3);
+            `ifdef DEBUG
+                $display("Error to open file: ", FILE_NAME3);
+            `endif
             $finish();
         end else if (!fh4) begin
-            $display("Error to open file: ", FILE_NAME4);
+            `ifdef DEBUG
+                $display("Error to open file: ", FILE_NAME4);
+            `endif
             $finish();
         end else begin
             // Keep reading lines until EOF is found
             while (! $feof(fh1)) begin
-                @(posedge clk)
+                @(posedge clk)                
                     byte_data1_ = $fgetc(fh1);
-                    $display("Data1: %h", byte_data1);
+                    valid[0] = 1'b1;
+                    `ifdef DEBUG
+                        $display("Data1: %h", byte_data1);
+                    `endif
                     byte_data2_ = $fgetc(fh2);
-                    $display("Data2: %h", byte_data2);
+                    valid[1] = 1'b1;
+                    `ifdef DEBUG
+                        $display("Data2: %h", byte_data2);
+                    `endif
                     byte_data3_ = $fgetc(fh3);
-                    $display("Data3: %h", byte_data3);
+                    valid[2] = 1'b1;
+                    `ifdef DEBUG
+                        $display("Data3: %h", byte_data3);
+                    `endif
                     byte_data4_ = $fgetc(fh4);
-                    $display("Data4: %h", byte_data4);
-                    $display("EOF: %0d", !$feof(fh1));
+                    valid[3] = 1'b1;
+                    `ifdef DEBUG
+                        $display("Data4: %h", byte_data4);
+                        $display("EOF: %0d", !$feof(fh1));
+                    `endif
             end
         end
 

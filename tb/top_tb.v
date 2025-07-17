@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 
-module testbench();
+module top_tb();
     localparam real DATA_FREQUENCY = 100e6;      // Clock frequency in Hz
     localparam real SYS_FREQUENCY = 27e6;
     localparam FILE_NAME1 = "tsdata1_loss.ts";
@@ -37,7 +37,7 @@ module testbench();
         .byte_data2(byte_data2),
         .byte_data3(byte_data3),
         .byte_data4(byte_data4)
-    );    
+    ); 
 
     initial begin
         reset_n = 1'b0; #40;
