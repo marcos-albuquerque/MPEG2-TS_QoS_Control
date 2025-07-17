@@ -1,12 +1,11 @@
 `timescale 1us / 100ns
 
-module main_control_tb();
+module tb_main_control();
 
     // Main_control regs
     reg         clk;
     reg         rst;
-    reg  [3:0]  valid;     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
-    reg  [31:0] err_count; // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
+    reg  [31:0] err_count;
     reg  [3:0]  sync;
 
     // Memory_mapped pins
@@ -24,7 +23,6 @@ module main_control_tb();
         // Main_control inputs
         .clk(clk),
         .rstn(!rst),
-        .valid(valid),     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
         .err_count(err_count), // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
         .sync(sync),
 
@@ -53,9 +51,7 @@ module main_control_tb();
         mm_addr = 0;
         mm_wdata = 0;
 
-        valid = 0;
         err_count = 0;
-
 
         rst = 1;
         clk = 0;
@@ -81,7 +77,6 @@ module main_control_tb();
         manual_channel   = 00;
         channel_priority = 8'b11_01_00_10;
         reset_timer      = 20'd30;
-        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #520;
         $display("Mudanca de parametros %t",$time);
@@ -90,7 +85,6 @@ module main_control_tb();
         manual_channel   = 10;
         channel_priority = 8'b11_01_10_00;
         reset_timer      = 20'd30;
-        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #500;
         fallback_enable  = 0;
@@ -98,7 +92,6 @@ module main_control_tb();
         manual_channel   = 11;
         channel_priority = 8'b00_11_10_01;
         reset_timer      = 20'd50;
-        valid            = 4'b1111;
         mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
         #2000;
         $stop;

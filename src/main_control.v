@@ -1,20 +1,37 @@
+/*
+ * main_control
+ * Main control for select the better transport stream channel according its packet loss counter and intern parameters
+ * 
+ * @input  clk              - System clock
+ * @input  rstn             - Negative system reset
+ * @input  err_count        - Channel packet loss counter
+ * @input  sync             - Channel synchronization signal
+ *
+ * @input  mm_write_en      - Signal enable writing in memory mapped
+ * @input  mm_read_en       - Signal enable reading in memory mapped
+ * @input  mm_addr          - Address memory
+ * @input  mm_wdata         - Data write
+ * @output mm_rdata         - Data read
+ *
+ * @output mux_control      - Signal to choose better channel
+ * @output en_reset_counter - Signal to reset packet loss counter module
+ *
+ * Author: Matheus do Nascimento Santos
+ */
+
 module main_control(
 
-    // Main_control inputs
     input         clk,
     input         rstn,
-    input  [3:0]  valid,     // 4bits  -> ch1 = [0]   / ch2 = [1]    / ch3 = [2]     / ch4 = [3]
-    input  [31:0] err_count, // 32bits -> ch1 = [0:7] / ch2 = [8:15] / ch3 = [16:23] / ch4 = [24:31]
+    input  [31:0] err_count,
     input  [3:0]  sync,
 
-    // Memory_mapped interface
     input         mm_write_en,
     input         mm_read_en,
     input  [7:0]  mm_addr,
     input  [31:0] mm_wdata,
     output [31:0] mm_rdata,
 
-    // Main_control output
     output [1:0]  mux_control,
     output        en_reset_counter
 );
