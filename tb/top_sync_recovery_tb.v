@@ -75,7 +75,7 @@ module top_sync_recovery_tb();
     initial begin
         reset_n = 1'b0; #40;
         reset_n = 1'b1; 
-
+        #1000_0000 $stop; 
         // ...
     end
 

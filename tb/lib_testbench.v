@@ -58,8 +58,7 @@ module stimulus_from_file #(
             // Keep reading lines until EOF is found
             while (! $feof(fh1)) begin
                 @(posedge clk)
-                    valid = 4'd0; 
-                @(posedge clk)
+                    valid = 0;
                     byte_data1_ = $fgetc(fh1);
                     valid[0] = 1'b1;
                     `ifdef DEBUG

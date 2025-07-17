@@ -11,8 +11,8 @@ module sync_recovery(
     localparam SYNC_BYTE = 8'h47, MAX_REPS = 8'd255;
 
     reg [1:0] state;
-    reg [7:0] COUNT_BYTES;
-    reg [7:0] COUNT_REPS;
+    reg [7:0] count_bytes;
+    reg [7:0] count_reps;
     reg flag;
 
     always@(posedge clk or negedge rst) begin
@@ -27,10 +27,9 @@ module sync_recovery(
 
             case (state)
                 IDLE: begin
-                    sync <= 1'b0;
-                    sync <= 1'b0;
-                    COUNT_BYTES <= 1'b1;
-                    COUNT_REPS <= 8'd0;
+                    flag <= 1'b0;
+                    count_bytes <= 1'b1;
+                    count_reps <= 8'd0;
                     if (byte_in == SYNC_BYTE) begin
                         state <= CONTAGEM;
                     end 
@@ -38,39 +37,31 @@ module sync_recovery(
                     
                 CONTAGEM: begin
                     sync <= 1'b0;
-                    COUNT_BYTES <= COUNT_BYTES + 1'b1;
-                    if (COUNT_BYTES == 8'd187) begin
+                    count_bytes <= count_bytes + 1'b1;
+                    if (count_bytes == 8'd187) begin
                         state <= VERIFICACAO;
                     end
                 end
 
                 VERIFICACAO: begin
-                    COUNT_BYTES <= 8'd1;
-                    //COUNT_REPS <= COUNT_REPS + 1'b1;
-
-
-                    if (byte_in == SYNC_BYTE && flag) sync <= 1'b1;
-
-
                     if (byte_in == SYNC_BYTE) begin
-                        COUNT_REPS <= COUNT_REPS + 1'b1;
+                        count_bytes <= 8'd1;
+                        count_reps <= count_reps + 1'b1;
+                        if (flag) sync <= 1'b1;
+                        if (count_reps < MAX_REPS) state <= CONTAGEM;
+                        if (count_reps >= MAX_REPS) begin
+                            if (!flag) state <= SYNC_FOUND;
+                            if (flag) state <= CONTAGEM;
+                        end 
                     end else begin
-                        COUNT_REPS <= 1'b0;
-                    end
-
-
-                    if (byte_in == SYNC_BYTE && COUNT_REPS < MAX_REPS) begin
-                        state <= CONTAGEM;
-                    end else if (byte_in == SYNC_BYTE && COUNT_REPS >= MAX_REPS) begin
-                        state <= SYNC_FOUND;
-                    end else  begin
+                        count_reps <= 1'b0;
                         state <= IDLE;
-                    end 
+                    end
                 end
 
                 SYNC_FOUND: begin
-                    COUNT_REPS <= 4'd0;
-                    COUNT_BYTES <= 8'd2;
+                    count_reps <= 4'd0;
+                    count_bytes <= 8'd2;
                     flag <= 1'b1;
                     state <= CONTAGEM;
                 end
