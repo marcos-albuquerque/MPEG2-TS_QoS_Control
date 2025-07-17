@@ -21,6 +21,7 @@ module sync_recovery(
             valid <= 1'b0;
             byte_out <= 1'b0;
             sync = 1'b0;
+            flag <= 1'b0;
         end else if (byte_valid) begin
             valid <= 1'b1;
             byte_out <= byte_in;
