@@ -18,15 +18,16 @@ module tb_top_fifo_out();
   wire [DATA_WIDTH-1:0] byte_data3;
   wire [DATA_WIDTH-1:0] byte_data4;
 
-  wire [9:0] data_out_final; // [9] valid, [8] sync, [7:0] ts_data
-
+  wire [7:0] ts_data_out; // [9] valid, [8] sync, [7:0] ts_data
+  wire       valid_out;
+  wire       sync_out;
+  wire [3:0] valid;
 
   integer fd_out1;
   integer fd_out2;
   integer fd_out3;
   integer fd_out4;
 
-  wire valid_out;
   reg [1:0] mux_ctrl;
   wire [3:0] sync;
   assign sync[0] = (byte_data1 == 8'h47) ? 1'b1 : 1'b0;
@@ -47,9 +48,9 @@ module tb_top_fifo_out();
               .data_s2(byte_data2),
               .data_s3(byte_data3),
               .data_s4(byte_data4),
-              .valid_in(4'b1111),
-              .sync_in(sync_in),
-              .data_out_final(data_out_final)
+              .valid_in(valid),
+              .sync_in(sync),
+              .data_out_final({valid_out,sync_out,ts_data_out})
             );
 
   clock_generator #(SYS_FREQUENCY) CLOCK_W(.clk(wclk));
@@ -63,7 +64,9 @@ module tb_top_fifo_out();
                         .DATA_WIDTH(DATA_WIDTH)
                       )
                       stimulus_from_file_inst (
-                        .clk(wclk),
+                        .clk(rclk),
+                        .rstn(reset_n),
+                        .valid(valid),
                         .byte_data1(byte_data1),
                         .byte_data2(byte_data2),
                         .byte_data3(byte_data3),

@@ -9,12 +9,13 @@ module stimulus_from_file #(
     parameter DATA_WIDTH = 8
     // parameter DEPTH      = 
 )(
-    input clk,
-    output reg [3:0] valid,
-    output [DATA_WIDTH-1:0] byte_data1,     // ts data
-    output [DATA_WIDTH-1:0] byte_data2,
-    output [DATA_WIDTH-1:0] byte_data3,
-    output [DATA_WIDTH-1:0] byte_data4
+    input                        clk,
+    input                        rstn,
+    output reg  [3:0]            valid,
+    output      [DATA_WIDTH-1:0] byte_data1,     // ts data
+    output      [DATA_WIDTH-1:0] byte_data2,
+    output      [DATA_WIDTH-1:0] byte_data3,
+    output      [DATA_WIDTH-1:0] byte_data4
 );
     // output regs
     reg [DATA_WIDTH-1:0] byte_data1_,
@@ -29,6 +30,11 @@ module stimulus_from_file #(
             fh4;
     
     initial begin
+        byte_data1_ <= 0;
+        byte_data2_ <= 0;
+        byte_data3_ <= 0;
+        byte_data4_ <= 0;
+        wait(rstn == 1);
         fh1 = $fopen(FILE_NAME1, "rb");
         fh2 = $fopen(FILE_NAME2, "rb");
         fh3 = $fopen(FILE_NAME3, "rb");

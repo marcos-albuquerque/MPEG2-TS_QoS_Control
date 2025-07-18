@@ -27,7 +27,7 @@ module top_fifo_out #(
         .in_3(data_s3), 
         .in_4(data_s4),
         .mux_ctrl(mux_ctrl), 
-        .data_out(mux_data_out)
+        .out(mux_data_out)
     );
 
     mux #(
@@ -38,7 +38,7 @@ module top_fifo_out #(
         .in_3(valid_in[2]), 
         .in_4(valid_in[3]),
         .mux_ctrl(mux_ctrl), 
-        .data_out(mux_valid_out)
+        .out(mux_valid_out)
     );
 
     mux #(
@@ -49,7 +49,7 @@ module top_fifo_out #(
         .in_3(sync_in[2]), 
         .in_4(sync_in[3]),
         .mux_ctrl(mux_ctrl), 
-        .data_out(mux_sync_out)
+        .out(mux_sync_out)
     );
 
     fifo_controller # (
