@@ -43,7 +43,7 @@ module top_fifo_out #(
 
     mux #(
         .DATA_WIDTH(1)
-    ) mux_valid_inst (
+    ) mux_sync_inst (
         .in_1(sync_in[0]),
         .in_2(sync_in[1]), 
         .in_3(sync_in[2]), 

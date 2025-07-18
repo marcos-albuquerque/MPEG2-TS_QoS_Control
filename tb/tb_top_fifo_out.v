@@ -42,7 +42,7 @@ module tb_top_fifo_out();
               .rstn(reset_n),
               .wclk(wclk),
               .rclk(rclk),
-              .mux_ctrl(mux_ctrl)
+              .mux_ctrl(mux_ctrl),
               .data_s1(byte_data1),
               .data_s2(byte_data2),
               .data_s3(byte_data3),
@@ -102,23 +102,6 @@ module tb_top_fifo_out();
     if (fd_out4 != 0) $fclose(fd_out4);
 
     $stop; 
-  end
-
-  always @(posedge rclk) begin
-    if (reset_n) begin //
-      if (valid_out1) begin
-        $fwrite(fd_out1, "%b\n", rdata1);
-      end
-      if (valid_out2) begin
-        $fwrite(fd_out2, "%b\n", rdata2);
-      end
-      if (valid_out3) begin
-        $fwrite(fd_out3, "%b\n", rdata3);
-      end
-      if (valid_out4) begin
-        $fwrite(fd_out4, "%b\n", rdata4);
-      end
-    end
   end
 
 endmodule
