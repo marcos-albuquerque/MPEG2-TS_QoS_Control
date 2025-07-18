@@ -1,4 +1,4 @@
-module top_continuity_counter(
+module top_packet_loss_counter(
     input  clk,
     input  reset_n,
     input  valid[3:0],
