@@ -34,6 +34,7 @@ module stimulus_from_file #(
         byte_data2_ <= 0;
         byte_data3_ <= 0;
         byte_data4_ <= 0;
+        valid       <= 0;
         wait(rstn == 1);
         fh1 = $fopen(FILE_NAME1, "rb");
         fh2 = $fopen(FILE_NAME2, "rb");
