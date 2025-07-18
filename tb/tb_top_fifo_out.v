@@ -2,7 +2,7 @@
 
 module tb_top_fifo_out();
   localparam real SYS_FREQUENCY = 108e6;
-  localparam real DATA_FREQUENCY = 27e6;       
+  localparam real DATA_FREQUENCY = 27e6; 
   localparam FILE_NAME1 = "tsdata1_loss.ts";
   localparam FILE_NAME2 = "tsdata2_loss.ts";
   localparam FILE_NAME3 = "tsdata3_loss.ts";
@@ -35,8 +35,8 @@ module tb_top_fifo_out();
   assign sync[3] = (byte_data4 == 8'h47) ? 1'b1 : 1'b0;
 
   top_fifo_out # (
-              .DATA_WIDTH(DATA_WIDTH),
-              .ADDR_WIDTH(ADDR_WIDTH)
+              .DATA_WIDTH(9),
+              .ADDR_WIDTH(4)
             )
             top_fifo_out_inst (
               .rstn(reset_n),
