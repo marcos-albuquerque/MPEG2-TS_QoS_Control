@@ -1,3 +1,32 @@
+/*
+ * memory_mapped
+ * The Memory_mapped module is responsible for receiving parameters for the internal functions of main_control 
+ * and providing information about its internal state.
+ *
+ * @input  clk              - System clock
+ * @input  rstn             - Negative system reset
+ * @input  mm_write_en      - Signal enable writing in memory mapped
+ * @input  mm_read_en       - Signal enable reading in memory mapped
+ * @input  mm_addr          - Address memory
+ * @input  mm_wdata         - Data write
+ * @output mm_rdata         - Data read
+ *
+ * @output fallback_enable  - Enable fall back
+ * @output manual_enable    - Enable manual mode
+ * @output manual_channel   - Channel if manual mode is on
+ * @output channel_priority - Choose priority channel
+ * @output reset_timer      - Internal timer
+ *
+ * @input active_channel    - Channel selected by main control
+ * @input signal_present    - Signal present per channel
+ * @input error_count_ch0   - Channel 1 packet loss counter
+ * @input error_count_ch1   - Channel 2 packet loss counter
+ * @input error_count_ch2   - Channel 3 packet loss counter
+ * @input error_count_ch3   - Channel 4 packet loss counter
+ *
+ * Author: Matheus do Nascimento Santos
+ */
+
 module memory_mapped (
     input              clk,
     input              rstn,
