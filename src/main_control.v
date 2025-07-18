@@ -63,7 +63,7 @@ module main_control(
     reg [3:0]  signal_present_ctrl;
     reg        reset_packet_loss_counter;
     reg        mm_write_en_fall_detection;
-    
+
     assign mux_control        = active_channel;
     assign en_reset_counter   = reset_packet_loss_counter;
 
@@ -190,7 +190,7 @@ module main_control(
                     else                 //if fallback_enable = 0, the function stays the current channel when counters are same.
                         partial_result[1] = (priority_decode(channel_priority[3:2],err_count) <= priority_decode(channel_priority[1:0],err_count)) ? channel_priority[3:2]: channel_priority[1:0];
                 end
-                
+
                                         //Finally, least channel counter is selected.
             if(!valid_decode(partial_result[0],signal_present_ctrl))
                     select_new_channel = partial_result[1];

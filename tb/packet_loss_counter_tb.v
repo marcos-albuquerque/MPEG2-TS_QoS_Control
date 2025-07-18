@@ -71,7 +71,6 @@ module packet_loss_counter_tb ();
             end
         end
 
-        // testing the main control reset counter signal
         en_reset_counter = 1'b1; #10;
         en_reset_counter = 1'b0;
         repeat(94000) begin
