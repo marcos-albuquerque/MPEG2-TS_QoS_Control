@@ -61,7 +61,6 @@ module tb_fifo_controller;
     rrst_n <= 0;
     wdata <= 0;
     valid_in <= 0;
-    errors = 0;
 
 
     

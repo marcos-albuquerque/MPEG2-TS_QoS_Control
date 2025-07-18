@@ -35,7 +35,7 @@ module sync_recovery(
                         state <= CONTAGEM;
                     end 
                 end 
-                    
+
                 CONTAGEM: begin
                     sync <= 1'b0;
                     count_bytes <= count_bytes + 1'b1;
