@@ -3,8 +3,8 @@ module top_fifo_out #(
     parameter ADDR_WIDTH = 4
   ) (  // Top: Conecta MUXs, Divider, FIFO e Main Control.
     input        rstn,
-    input        clk1,
-    input        clk2,  // Reset, clk2(27MHz) e clk2(108MHz).
+    input        wclk,
+    input        rclk,  // Reset, clk2(27MHz) e clk2(108MHz).
     input  [1:0] mux_ctrl,
     input  [7:0] data_s1,
     input  [7:0] data_s2,
@@ -17,7 +17,6 @@ module top_fifo_out #(
 
     wire [7:0] mux_data_out;  // Saída MUX DATA.
     wire mux_valid_out, mux_sync_out;  // Saídas VALID/SYNC.
-    wire [DATA_WIDTH-1:0] fifo_data_input = {mux_sync_out,mux_data_out};  // Concatenado para FIFO.
 
     // MUXs (sempre ativos).
     mux #(
@@ -58,11 +57,11 @@ module top_fifo_out #(
                     .ADDR_WIDTH(ADDR_WIDTH)
                   )
                   fifo_controller_out (
-                    .wclk(clk2),
+                    .wclk(wclk),
                     .wrst_n(rstn),
-                    .wdata(fifo_data_input),
+                    .wdata({mux_sync_out,mux_data_out}),
                     .valid_in(mux_valid_out),
-                    .rclk(clk1),
+                    .rclk(rclk),
                     .rrst_n(rstn),
                     .rdata(data_out_final[DATA_WIDTH-1:0]),
                     .valid_out(data_out_final[DATA_WIDTH])

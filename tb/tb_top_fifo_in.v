@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 
-module tb_top_fifo();
-  localparam real DATA_FREQUENCY = 100e6;
+module tb_top_fifo_in();
+  localparam real DATA_FREQUENCY = 108e6;
   localparam real SYS_FREQUENCY = 27e6;       
   localparam FILE_NAME1 = "tsdata1_loss.ts";
   localparam FILE_NAME2 = "tsdata2_loss.ts";
@@ -31,11 +31,11 @@ module tb_top_fifo();
   wire valid_out1, valid_out2, valid_out3, valid_out4;
 
 
-  top_fifo # (
+  top_fifo_in # (
               .DATA_WIDTH(DATA_WIDTH),
               .ADDR_WIDTH(ADDR_WIDTH)
             )
-            top_fifo_inst (
+            top_fifo_in_inst (
               .wclk(wclk),
               .wrst_n(reset_n),
               .wdata1(byte_data1),
