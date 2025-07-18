@@ -18,11 +18,11 @@ module packet_loss_counter (
     reg [3:0] previous_cc;          // previous continuity counter (cc)
     reg [3:0] current_cc;           // current cc
     reg firt_cc_flag;               // flag to indicate first cc
-
+    
     // output reg
     reg [7:0] error_count_;
     assign error_count = error_count_;
-
+    
     always @(posedge clk, negedge reset_n, posedge en_reset_counter) begin
         if (!reset_n || en_reset_counter) begin
             state <= 0;
