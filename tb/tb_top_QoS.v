@@ -35,47 +35,10 @@ module tb_top_QoS();
     reg [7:0]  channel_priority;
     reg [19:0] reset_timer;
 
-
-
     integer fd_out1;
     integer fd_out2;
     integer fd_out3;
     integer fd_out4;
-
-    top_QoS top_qos_inst (
-    .rst_n(reset_n),
-
-    .wclk1(wclk),
-    .valid1(valid[0]),
-    .ts_data1(byte_data1),
-
-    .wclk2(wclk),
-    .valid2(valid[1]),
-    .ts_data2(byte_data2),
-    
-    .wclk3(wclk),
-    .valid3(valid[2]),
-    .ts_data3(byte_data3),
-    
-    .wclk4(wclk),
-    .valid4(valid[3]),
-    .ts_data4(byte_data4),
-
-    .rclk(rclk),
-    
-    // Config interface
-    .mm_write_en(mm_write_en),
-    .mm_read_en(mm_read_en),
-    .mm_addr(mm_addr),
-    .mm_wdata(mm_wdata),
-    .mm_rdata(mm_rdata),
-
-    // Outputs
-    .clk_out(clk_out),
-    .valid_out(valid_out),
-    .syn_out(syn_out),
-    .ts_data_out(ts_data_out)
-    );
 
     clock_generator #(DATA_FREQUENCY, 1) CLOCK27M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK108M(.clk(rclk));
@@ -95,9 +58,44 @@ module tb_top_QoS();
         .byte_data2(byte_data2),
         .byte_data3(byte_data3),
         .byte_data4(byte_data4)
-    ); 
+    );
 
-    initial begin // Initializing variables
+    top_QoS top_qos_inst (
+        .rst_n(reset_n),
+
+        .wclk1(wclk),
+        .valid1(valid[0]),
+        .ts_data1(byte_data1),
+
+        .wclk2(wclk),
+        .valid2(valid[1]),
+        .ts_data2(byte_data2),
+        
+        .wclk3(wclk),
+        .valid3(valid[2]),
+        .ts_data3(byte_data3),
+        
+        .wclk4(wclk),
+        .valid4(valid[3]),
+        .ts_data4(byte_data4),
+
+        .rclk(rclk),
+        
+        // Config interface
+        .mm_write_en(mm_write_en),
+        .mm_read_en(mm_read_en),
+        .mm_addr(mm_addr),
+        .mm_wdata(mm_wdata),
+        .mm_rdata(mm_rdata),
+
+        // Outputs
+        .clk_out(clk_out),
+        .valid_out(valid_out),
+        .syn_out(syn_out),
+        .ts_data_out(ts_data_out)
+    );
+
+    initial begin : vars_initializing
         fallback_enable  <= 0;
         manual_enable    <= 0;
         channel_priority <= 0;
@@ -108,7 +106,7 @@ module tb_top_QoS();
         mm_wdata         <= 0;
     end
 
-    initial begin // Reading internal parameters
+    initial begin : reading_from_mm // Reading internal parameters
         wait(reset_n==1);
         forever begin
             #2000;
@@ -127,17 +125,17 @@ module tb_top_QoS();
         end
     end
 
-    initial begin // Writing internal paramers
+    initial begin : writing_to_mm // Writing internal paramers
         wait(reset_n==1);
-        forever begin
+        forever begin           // I think it's not necessary writting to MM forever
             $display("Mudanca de parametros %t",$time);
             fallback_enable  = 1;
             manual_enable    = 0;
             manual_channel   = 00;
             channel_priority = 8'b11_01_00_10;
-            reset_timer      = 20'd75_000;             // 2250 = 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
+            reset_timer      = 20'd750_000;             // 2250 = 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
             mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-            #1000;
+            #1000000;
             $display("Mudanca de parametros %t",$time);
             fallback_enable  = 1;
             manual_enable    = 1;
@@ -146,14 +144,14 @@ module tb_top_QoS();
             reset_timer      = 20'd150_000;
             mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
             $display("Mudanca de parametros %t",$time);
-            #500;
+            #1000000;
             fallback_enable  = 0;
             manual_enable    = 0;
             manual_channel   = 11;
             channel_priority = 8'b00_11_10_01;
             reset_timer      = 20'd75_000;
             mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-            #2000;
+            #1000000;
         end
     end
 
@@ -179,7 +177,7 @@ module tb_top_QoS();
 
         wait($feof(stimulus_from_file_inst.fh1)==0);
 
-        $stop; 
+        // $stop; 
     end
 
     task mm_write(input [7:0] addr, input [31:0] data);

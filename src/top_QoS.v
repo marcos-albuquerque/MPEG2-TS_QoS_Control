@@ -155,11 +155,14 @@ module top_QoS (
         .en_reset_counter(en_reset_counter)
     );
 
-    //---------------CLOCK DIVIDER WIRING------------------
-    clock_divider clock_divider_inst( 
+    clock_divider # (
+        .FREQUENCY_IN(108_000_000),
+        .FREQUENCY_OUT(27_000_000)
+    )
+    clock_divider_inst (
         .rstn(rst_n),
         .clk2(rclk),
-        .clk_out(clk_out)
+        .clk_pulse_out(clk_out)
     );
 
     //---------------FIFO OUTPUT WIRING--------------------
