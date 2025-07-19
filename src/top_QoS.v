@@ -36,7 +36,7 @@ module top_QoS (
     localparam DATA_WIDTH = 8;
     localparam ADDR_WIDTH = 4;
 
-    // --------------- FIFO WIRING ---------------
+    // ------------------- FIFO INPUT WIRING ---------------
     wire [DATA_WIDTH-1:0] data_fout1,
                           data_fout2,
                           data_fout3,
@@ -45,24 +45,26 @@ module top_QoS (
          valid_fout2,
          valid_fout3,
          valid_fout4;
-    // -------------------------------------------
-    
-    // ----------- SYNC_RECOVERY WIRING ----------
+
+    // ---------------- SYNC_RECOVERY WIRING --------------
     wire sync_out1, sync_out2, sync_out3, sync_out4;
     wire srvalid_out1, srvalid_out2, srvalid_out3, srvalid_out4;
     wire [7:0] srbyte_out1, srbyte_out2, srbyte_out3, srbyte_out4;
-    // --------------------------------------------
+    // --------------------------------------------------------
 
     // ------------- MAIN CONTROL -----------------
     wire [1:0] mux_control;
     wire en_reset_counter;
     // --------------------------------------------
 
+    // --------------FIFO INPUT WIRING-------------------
+
     top_fifo_in # (
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(ADDR_WIDTH)
     )
-    top_fifo_in_inst (
+    top_fifo_in_inst 
+    (
         .wclk1(wclk1),
         .wclk2(wclk2),
         .wclk3(wclk3),
@@ -127,8 +129,8 @@ module top_QoS (
     top_packet_loss_counter  top_packet_loss_counter_inst (
         .clk(rclk),
         .reset_n(rst_n),
-        .valid({srvalid_out1, srvalid_out2, srvalid_out3, srvalid_out4}),
-        .sync({sync_out1,sync_out2,sync_out3,sync_out4}),
+        .valid({srvalid_out4,srvalid_out3,srvalid_out2,srvalid_out1}),
+        .sync({sync_out4,sync_out3,sync_out2,sync_out1}),
         .en_reset_counter(en_reset_counter),
         .data0(srbyte_out1),
         .data1(srbyte_out2),
@@ -143,7 +145,7 @@ module top_QoS (
         .clk(rclk),
         .rstn(rst_n),
         .err_count(error_count),
-        .sync({sync_out1,sync_out2,sync_out3,sync_out4}),
+        .sync({sync_out4,sync_out3,sync_out2,sync_out1}),
         .mm_write_en(mm_write_en),
         .mm_read_en(mm_read_en),
         .mm_addr(mm_addr),
@@ -151,6 +153,33 @@ module top_QoS (
         .mm_rdata(mm_rdata),
         .mux_control(mux_control),
         .en_reset_counter(en_reset_counter)
+    );
+
+    //---------------CLOCK DIVIDER WIRING------------------
+    clock_divider clock_divider_inst( 
+        .rstn(rst_n),
+        .clk2(rclk),
+        .clk_out(clk_out)
+    );
+
+    //---------------FIFO OUTPUT WIRING--------------------
+    top_fifo_out #(
+        .DATA_WIDTH(DATA_WIDTH+1),
+        .ADDR_WIDTH(ADDR_WIDTH)
+    ) 
+        top_fifo_out_inst
+    ( 
+        .rstn(rst_n),
+        .wclk(rclk),
+        .rclk(clk_out),
+        .mux_ctrl(mux_control),
+        .data_s1(srbyte_out1),
+        .data_s2(srbyte_out1),
+        .data_s3(srbyte_out1),
+        .data_s4(srbyte_out1), 
+        .valid_in({srvalid_out4,srvalid_out3,srvalid_out2,srvalid_out1}),
+        .sync_in({sync_out4,sync_out3,sync_out2,sync_out1}), 
+        .data_out_final({valid_out,syn_out,ts_data_out})
     );
 
 endmodule
