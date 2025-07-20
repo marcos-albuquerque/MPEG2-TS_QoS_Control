@@ -64,9 +64,13 @@ module memory_mapped (
     // Writing and Reading in memory_mapped
     always @(posedge clk or negedge rstn) begin
         if (!rstn) begin
-            mm_reg[0]    <= 0;
-            mm_reg[1]    <= 0;
-            mm_reg[2]    <= 0;
+            mm_reg[0][0] <= 0;
+            mm_reg[0][1] <= 1;
+            mm_reg[0][3:2] <= 2'b00;
+            mm_reg[0][11:4] <= 8'b11100100;
+            mm_reg[0][31:12] <= 0;
+            mm_reg[1] <= 0;
+            mm_reg[2] <= 0;
         end else begin
             mm_reg[1] <= {26'd0, signal_present, active_channel};
             mm_reg[2] <= {error_count_ch3, error_count_ch2, error_count_ch1, error_count_ch0};
