@@ -1,191 +1,133 @@
 /*
- * async_fifo
- * FIFO assincrona que utiliza código gray
+ * fifo_controller
+ * Controle de leitura e escrita de FIFO assincrona
  *
  * @input wclk            - Clock de escrita.
  * @input wrst_n          - Reset assíncrono de escrita.
- * @input wen             - Habilita a escrita de dados.
  * @input wdata           - Dados a serem escritos na FIFO.
- * @ouput wfull           - Indica que a FIFO está cheia 
+ * @input valid_in        - Indica que o dado de entrada é válido
  * 
+ * @input rclk            - Clock de leitura.
  * @input rrst_n          - Reset assíncrono para o domínio de leitura.
- * @input ren             - Habilita a leitura de dados.
  * @output rdata          - Dados lidos da FIFO.
- * @output rempty         - Indica que a FIFO está vazia.
+ * @output valid_out      - Indica que o dado de saída é válido
  * Autor: Jorge Ivan Augusto De Oliveira Filho
  */
 
-module async_fifo #(
+module fifo_controller #(
     parameter DATA_WIDTH = 8,
     parameter ADDR_WIDTH = 4
   ) (
+
     // Escrita (27 MHz)
-    input                           wclk,
-    input                           wrst_n,
-    input                           wen,
-    input      [DATA_WIDTH-1:0]     wdata,
-    output reg                      wfull,
+    input                       wclk,
+    input                       wrst_n,
+    input      [DATA_WIDTH-1:0] wdata,
+    input                       valid_in,
 
     // Leitura (100 MHz)
-    input                           rclk,
-    input                           rrst_n,
-    input                           ren,
-    output     [DATA_WIDTH-1:0]     rdata,
-    output reg                      rempty
+    input                       rclk,
+    input                       rrst_n,
+    output     [DATA_WIDTH-1:0] rdata,
+    output                      valid_out
   );
 
-  localparam DEPTH = 1 << ADDR_WIDTH;
+  // --- Sinais de interface com a FIFO ---
+  wire                        fifo_wen;
+  wire                        fifo_wfull;
+  wire                        fifo_ren; 
+  wire                        fifo_rempty;
+  wire       [DATA_WIDTH-1:0] fifo_rdata;
 
-  // Ponteiros de escrita
-  reg [ADDR_WIDTH:0] wptr_bin;
-  wire [ADDR_WIDTH:0] wptr_bin_next;
-  reg [ADDR_WIDTH:0] wptr_gray;
-  wire [ADDR_WIDTH:0] wptr_gray_next;
-  wire [ADDR_WIDTH-1:0] waddr;
+  // --- Estados para controle de leitura ---
+  localparam IDLE = 2'b00;
+  localparam READING = 2'b01;
+  localparam VALID = 2'b10;
 
-  //Ponteiros de sincronização de leitura para domínio de escrita
-  reg [ADDR_WIDTH:0] rsync_r2w_ptr1,rsync_r2w_ptr2;
+  reg [1:0] current_state;
+  reg [1:0] next_state;
+  
+  // --- Registros de saída ---
+  reg                         valid_out_reg;
+  reg        [DATA_WIDTH-1:0] rdata_reg;
+  reg                         pending_read;
 
-  //Sinais de controle da escrita
-  wire we;
-  wire wfull_val;
+  // --- Lógica de Controle de Escrita ---
+  assign fifo_wen = valid_in && !fifo_wfull;
 
-  reg  [ADDR_WIDTH:0] rptr_bin;
-  wire [ADDR_WIDTH:0] rptr_bin_next;
-  reg [ADDR_WIDTH:0] rptr_gray;
-  wire [ADDR_WIDTH:0] rptr_gray_next;
-  wire [ADDR_WIDTH-1:0] raddr;
+  // --- Controle de leitura da FIFO ---
+  assign fifo_ren = (current_state == IDLE && !fifo_rempty) || 
+                    (current_state == VALID && !fifo_rempty);
 
-  wire rempty_val;
-
-  //Ponteiros de sincronização de leitura para domínio de escrita
-  reg [ADDR_WIDTH:0] wsync_w2r_ptr1;
-  reg [ADDR_WIDTH:0] wsync_w2r_ptr2;
-
-  // Memória da FIFO
-  reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
-
-  // --- Lógica de Escrita ---
-  assign we = !wfull && wen;
-  assign waddr = wptr_bin[ADDR_WIDTH-1:0];
-  assign wptr_bin_next = wptr_bin + we;
-  assign wptr_gray_next = (wptr_bin_next >> 1) ^ wptr_bin_next;
-
-  assign wfull_val = (wptr_gray_next == {~rsync_r2w_ptr2[ADDR_WIDTH:ADDR_WIDTH-1],
-                                         rsync_r2w_ptr2[ADDR_WIDTH-2:0]});
-
-  wire re; 
-  assign re = !rempty && ren;
-  assign raddr = rptr_bin[ADDR_WIDTH-1:0];
-  assign rptr_bin_next = rptr_bin + re;
-  assign rptr_gray_next = (rptr_bin_next >> 1) ^ rptr_bin_next;
-
-  assign rempty_val = (rptr_gray_next == wsync_w2r_ptr2);
-
-  //---- Escrita  -----//
-
-  always @(posedge wclk)
-  begin
-    if (we)
-    begin
-      mem[waddr] <= wdata;
-    end
-  end
-
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      rsync_r2w_ptr2 <= 0;
-      rsync_r2w_ptr1 <= 0;
-    end
-    else
-    begin
-      rsync_r2w_ptr2 <= rsync_r2w_ptr1;
-      rsync_r2w_ptr1 <= rptr_gray;
-    end
-  end
-
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      wptr_bin  <= 0;
-      wptr_gray <= 0;
-    end
-    else
-    begin
-      wptr_bin  <= wptr_bin_next;
-      wptr_gray <= wptr_gray_next;
-    end
-  end
-
-  always @(posedge wclk or negedge wrst_n)
-  begin
-    if (!wrst_n)
-    begin
-      wfull <= 1'b0;
-    end
-    else
-    begin
-      wfull <= wfull_val;
-    end
-  end
-
-  //---- Leitura -----//
-  reg [DATA_WIDTH-1:0] rdata_reg;
+  // --- Lógica de Saída ---
   assign rdata = rdata_reg;
+  assign valid_out = valid_out_reg;
 
-  always @(posedge rclk or negedge rrst_n)
+  // --- Máquina de Estados para Controle de Leitura ---
+  always @(*)
   begin
-    if (!rrst_n)
-    begin
-      rdata_reg <= {DATA_WIDTH{1'b0}};
-    end
-    else if (re)
-    begin
-      rdata_reg <= mem[raddr];
-    end
+    next_state = current_state;
+    case (current_state)
+      IDLE: begin
+        if (!fifo_rempty)
+          next_state = READING;
+      end
+      
+      READING: begin
+        next_state = VALID;
+      end
+      
+      VALID: begin
+        if (fifo_rempty)
+          next_state = IDLE;
+        else
+          next_state = READING; 
+      end
+    endcase
   end
 
   always @(posedge rclk or negedge rrst_n)
   begin
     if (!rrst_n)
     begin
-      wsync_w2r_ptr2 <= 0;
-      wsync_w2r_ptr1 <= 0;
+      current_state <= IDLE;
+      valid_out_reg <= 1'b0;
+      rdata_reg     <= {DATA_WIDTH{1'b0}};
     end
     else
     begin
-      wsync_w2r_ptr2 <= wsync_w2r_ptr1;
-      wsync_w2r_ptr1 <= wptr_gray;
+      current_state <= next_state;
+      case (current_state)
+        IDLE: begin
+          valid_out_reg <= 1'b0;
+        end
+        
+        READING: begin
+          valid_out_reg <= 1'b0;
+        end
+        
+        VALID: begin
+          rdata_reg     <= fifo_rdata;
+          valid_out_reg <= 1'b1;
+        end
+      endcase
     end
   end
 
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      rptr_bin  <= 0;
-      rptr_gray <= 0;
-    end
-    else
-    begin
-      rptr_bin  <= rptr_bin_next;
-      rptr_gray <= rptr_gray_next;
-    end
-  end
-
-  always @(posedge rclk or negedge rrst_n)
-  begin
-    if (!rrst_n)
-    begin
-      rempty <= 1'b1;
-    end
-    else
-    begin
-      rempty <= rempty_val;
-    end
-  end
+  async_fifo #(
+               .DATA_WIDTH(DATA_WIDTH),
+               .ADDR_WIDTH(ADDR_WIDTH)
+             ) async_fifo_inst (
+               .rdata(fifo_rdata),
+               .wfull(fifo_wfull),
+               .rempty(fifo_rempty),
+               .wdata(wdata),
+               .wen(fifo_wen),
+               .wclk(wclk),
+               .wrst_n(wrst_n),
+               .ren(fifo_ren),
+               .rclk(rclk),
+               .rrst_n(rrst_n)
+             );
 
 endmodule
