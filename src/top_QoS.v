@@ -166,6 +166,8 @@ module top_QoS (
     );
 
     //---------------FIFO OUTPUT WIRING--------------------
+    wire [8:0] fifo_data_out;
+
     top_fifo_out #(
         .DATA_WIDTH(DATA_WIDTH+1),
         .ADDR_WIDTH(ADDR_WIDTH)
@@ -182,7 +184,11 @@ module top_QoS (
         .data_s4(srbyte_out1), 
         .valid_in({srvalid_out4,srvalid_out3,srvalid_out2,srvalid_out1}),
         .sync_in({sync_out4,sync_out3,sync_out2,sync_out1}), 
-        .data_out_final({valid_out,syn_out,ts_data_out})
+        .valid_out(valid_out),
+        .data_out_final(fifo_data_out)
     );
+
+    assign syn_out = fifo_data_out[8];
+    assign ts_data_out = fifo_data_out[7:0];
 
 endmodule

@@ -23,7 +23,7 @@ module sync_recovery(
             sync = 1'b0;
             flag <= 1'b0;
         end else if (byte_valid) begin
-            valid <= 1'b1;
+            valid <= byte_valid;
             byte_out <= byte_in;
 
             case (state)
@@ -71,7 +71,7 @@ module sync_recovery(
             endcase
         end else begin 
             valid <= 1'b0;
-            byte_out <= 1'b0;
+            // byte_out <= 1'b0;
             sync <= 1'b0;
         end
     end

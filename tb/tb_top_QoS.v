@@ -9,6 +9,7 @@ module tb_top_QoS();
     localparam FILE_NAME4 = "tsdata4_loss.ts";
     localparam DATA_WIDTH = 8;
 
+    // input signals
     reg         reset_n;
     wire        wclk;
     wire        rclk;
@@ -18,27 +19,38 @@ module tb_top_QoS();
     wire [DATA_WIDTH-1:0] byte_data3;
     wire [DATA_WIDTH-1:0] byte_data4;
 
+
+    // Signals for writing and reading in memory-mapped
     reg         mm_write_en;
     reg         mm_read_en;
     reg  [7:0]  mm_addr;
     reg  [31:0] mm_wdata;
     wire [31:0] mm_rdata;
 
-    wire        clk_out;
-    wire        valid_out;
-    wire        syn_out;
-    wire [7:0]  ts_data_out;
-
+    // Config interface
+    // rw
     reg        fallback_enable;
     reg        manual_enable;
     reg [1:0]  manual_channel;
     reg [7:0]  channel_priority;
     reg [19:0] reset_timer;
+    // r
+    reg [1:0] active_channel;
+    reg [7:0] error_count_ch0,
+              error_count_ch1,
+              error_count_ch2,
+              error_count_ch3;
 
-    integer fd_out1;
-    integer fd_out2;
-    integer fd_out3;
-    integer fd_out4;
+    // Output signal
+    wire        clk_out;
+    wire        valid_out;
+    wire        syn_out;
+    wire [7:0]  ts_data_out;
+
+    // integer fd_out1;
+    // integer fd_out2;
+    // integer fd_out3;
+    // integer fd_out4;
 
     clock_generator #(DATA_FREQUENCY, 1) CLOCK27M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK108M(.clk(rclk));
@@ -60,7 +72,7 @@ module tb_top_QoS();
         .byte_data4(byte_data4)
     );
 
-    top_QoS top_qos_inst (
+    top_QoS DUT (
         .rst_n(reset_n),
 
         .wclk1(wclk),
@@ -106,76 +118,95 @@ module tb_top_QoS();
         mm_wdata         <= 0;
     end
 
-    initial begin : reading_from_mm // Reading internal parameters
+    initial begin : read_from_mm
         wait(reset_n==1);
         forever begin
-            #2000;
             mm_read(8'h00);
             @(posedge rclk);
             @(posedge rclk);
-            $display("fallback_enable: %b | manual_enable %b | manual_channel %b | channel_priority %b | reset_timer %d",mm_rdata[0],mm_rdata[1],mm_rdata[3:2],mm_rdata[11:4],mm_rdata[31:12]);
+            fallback_enable = mm_rdata[0];
+            manual_enable = mm_rdata[1];
+            manual_channel = mm_rdata[3:2];
+            channel_priority = mm_rdata[11:4];
+            reset_timer = mm_rdata[31:12];
+            $display("fallback_enable: %b | manual_enable %b | manual_channel %b | channel_priority %b | reset_timer %d",
+                        mm_rdata[0],mm_rdata[1],mm_rdata[3:2],mm_rdata[11:4],mm_rdata[31:12]);
+            
             mm_read(8'h01);
             @(posedge rclk);
             @(posedge rclk);
+            active_channel = mm_rdata[1:0];
             $display("canal ativo: %b | presenca de sinal %b",mm_rdata[1:0],mm_rdata[5:2]);
             mm_read(8'h02);
             @(posedge rclk);
             @(posedge rclk);
-            $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",mm_rdata[7:0],mm_rdata[15:8],mm_rdata[23:16],mm_rdata[31:24]);
+            error_count_ch0 = mm_rdata[7:0];
+            error_count_ch1 = mm_rdata[15:8];
+            error_count_ch2 = mm_rdata[23:16];
+            error_count_ch3 = mm_rdata[31:24];
+            $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",
+                    error_count_ch0, error_count_ch1, error_count_ch2, error_count_ch3);
+            
+            #100_000;
         end
     end
 
-    initial begin : writing_to_mm // Writing internal paramers
-        wait(reset_n==1);
-        forever begin           // I think it's not necessary writting to MM forever
-            $display("Mudanca de parametros %t",$time);
-            fallback_enable  = 1;
-            manual_enable    = 0;
-            manual_channel   = 00;
-            channel_priority = 8'b11_01_00_10;
-            reset_timer      = 20'd750_000;             // 2250 = 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
-            mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-            #1000000;
-            $display("Mudanca de parametros %t",$time);
-            fallback_enable  = 1;
-            manual_enable    = 1;
-            manual_channel   = 10;
-            channel_priority = 8'b11_01_10_00;
-            reset_timer      = 20'd150_000;
-            mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-            $display("Mudanca de parametros %t",$time);
-            #1000000;
-            fallback_enable  = 0;
-            manual_enable    = 0;
-            manual_channel   = 11;
-            channel_priority = 8'b00_11_10_01;
-            reset_timer      = 20'd75_000;
-            mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-            #1000000;
-        end
-    end
+    // initial begin : write_to_mm // Writing internal paramers
+        // wait(reset_n==1);
+        // #1000000;
+        // forever begin           // I think it's not necessary writting to MM forever
+        //     $display("Mudanca de parametros %t",$time);
+        //     fallback_enable  = 1;
+        //     manual_enable    = 0;
+        //     manual_channel   = 00;
+        //     channel_priority = 8'b11_01_00_10;
+        //     reset_timer      = 20'd750_000;             // 2250 = 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
+        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
+        //     #1000000;
+        //     $display("Mudanca de parametros %t",$time);
+        //     fallback_enable  = 1;
+        //     manual_enable    = 1;
+        //     manual_channel   = 10;
+        //     channel_priority = 8'b11_01_10_00;
+        //     reset_timer      = 20'd150_000;
+        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
+        //     $display("Mudanca de parametros %t",$time);
+        //     #1000000;
+        //     fallback_enable  = 0;
+        //     manual_enable    = 0;
+        //     manual_channel   = 11;
+        //     channel_priority = 8'b00_11_10_01;
+        //     reset_timer      = 20'd75_000;
+        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
+        //     #1000000;
+        // end
+    // end
 
     initial begin
         reset_n = 1'b0;
         #100;
         reset_n = 1'b1;
+
+        // wait(syn_out);
+        #1000;
+        // assert();
         // Abrir arquivos
-        fd_out1 = $fopen("rdata_out1.txt", "w");
-        fd_out2 = $fopen("rdata_out2.txt", "w");
-        fd_out3 = $fopen("rdata_out3.txt", "w");
-        fd_out4 = $fopen("rdata_out4.txt", "w");
+        // fd_out1 = $fopen("rdata_out1.txt", "w");
+        // fd_out2 = $fopen("rdata_out2.txt", "w");
+        // fd_out3 = $fopen("rdata_out3.txt", "w");
+        // fd_out4 = $fopen("rdata_out4.txt", "w");
 
-        if (fd_out1 == 0 || fd_out2 == 0 || fd_out3 == 0 || fd_out4 == 0) begin
-            $error("Error!");
-            $stop;
-        end
+        // if (fd_out1 == 0 || fd_out2 == 0 || fd_out3 == 0 || fd_out4 == 0) begin
+        //     $error("Error!");
+        //     $stop;
+        // end
 
-        if (fd_out1 != 0) $fclose(fd_out1);
-        if (fd_out2 != 0) $fclose(fd_out2);
-        if (fd_out3 != 0) $fclose(fd_out3);
-        if (fd_out4 != 0) $fclose(fd_out4);
+        // if (fd_out1 != 0) $fclose(fd_out1);
+        // if (fd_out2 != 0) $fclose(fd_out2);
+        // if (fd_out3 != 0) $fclose(fd_out3);
+        // if (fd_out4 != 0) $fclose(fd_out4);
 
-        wait($feof(stimulus_from_file_inst.fh1)==0);
+        // wait($feof(stimulus_from_file_inst.fh1)==0);
 
         // $stop; 
     end
