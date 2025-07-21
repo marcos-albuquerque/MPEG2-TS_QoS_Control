@@ -118,9 +118,95 @@ module tb_top_QoS();
         mm_wdata         <= 0;
     end
 
-    initial begin : read_from_mm
-        wait(reset_n==1);
-        forever begin
+    initial begin
+        reset_n = 1'b0;
+        #100;
+        reset_n = 1'b1;
+
+        read_from_mm();
+
+        // Checking if the system is initialized with manual mode and channel 0 as default
+        @(posedge rclk);
+            if(active_channel == 2'b00)
+                $display("Active_channel: %d | Ok", active_channel);
+            else begin
+                $display("Error: active channel not expected!");
+                $stop;
+            end
+        #100;
+        // wait(syn_out);
+        // repeat(4) begin
+        //     read_from_mm();
+        //     #1000000;
+        // end
+
+        // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
+        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd750_000);
+        #1000;
+        read_from_mm();
+        #50;
+        if (active_channel == 2'b00) begin
+            $display("Active_channel: %d | Ok", active_channel);
+        end else begin
+            $display("Error: active channel not expected!");
+            $stop;
+        end
+        #1000000;
+        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd450_000);
+        #1000000;
+        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd350_000);
+        #1000000;
+
+        /* TODO:
+        * Control and monitor config interface
+        * Compare results and save it in file
+        */
+
+    end
+
+    // ============================== Util Tasks ==============================
+
+    task mm_write(input [7:0] addr, input [31:0] data);
+        begin
+            @(posedge rclk);
+            mm_addr     <= addr;
+            mm_wdata    <= data;
+            mm_write_en <= 1'b1;
+            @(posedge rclk);
+            mm_write_en <= 1'b0;
+        end
+    endtask
+
+    task mm_read(input [7:0] addr);
+        begin
+            @(posedge rclk);
+            mm_addr    <= addr;
+            mm_read_en <= 1'b1;
+            @(posedge rclk);
+            mm_read_en <= 1'b0;
+        end
+    endtask
+
+    task write_to_mm( // fb, me, [1:0]mch, [7:0]ch_prty, [19:0] rst_timer;
+        input fb,               // fallback
+        input me,               // manual enable
+        input [1:0] mch,        // manual channel
+        input [7:0] ch_prty,    // priority channel
+        input [19:0] rst_timer  // reset timer
+    );
+        begin
+            $display("%t: Writing to mm at address 0x00",$time);
+            fallback_enable  = fb;
+            manual_enable    = me;
+            manual_channel   = mch;
+            channel_priority = ch_prty;
+            reset_timer      = rst_timer;
+            mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
+        end
+    endtask
+
+    task read_from_mm();
+        begin
             mm_read(8'h00);
             @(posedge rclk);
             @(posedge rclk);
@@ -146,90 +232,9 @@ module tb_top_QoS();
             error_count_ch3 = mm_rdata[31:24];
             $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",
                     error_count_ch0, error_count_ch1, error_count_ch2, error_count_ch3);
-            
-            #100_000;
-        end
-    end
-
-    // initial begin : write_to_mm // Writing internal paramers
-        // wait(reset_n==1);
-        // #1000000;
-        // forever begin           // I think it's not necessary writting to MM forever
-        //     $display("Mudanca de parametros %t",$time);
-        //     fallback_enable  = 1;
-        //     manual_enable    = 0;
-        //     manual_channel   = 00;
-        //     channel_priority = 8'b11_01_00_10;
-        //     reset_timer      = 20'd750_000;             // 2250 = 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
-        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-        //     #1000000;
-        //     $display("Mudanca de parametros %t",$time);
-        //     fallback_enable  = 1;
-        //     manual_enable    = 1;
-        //     manual_channel   = 10;
-        //     channel_priority = 8'b11_01_10_00;
-        //     reset_timer      = 20'd150_000;
-        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-        //     $display("Mudanca de parametros %t",$time);
-        //     #1000000;
-        //     fallback_enable  = 0;
-        //     manual_enable    = 0;
-        //     manual_channel   = 11;
-        //     channel_priority = 8'b00_11_10_01;
-        //     reset_timer      = 20'd75_000;
-        //     mm_write(8'h00,{reset_timer,channel_priority,manual_channel,manual_enable,fallback_enable});
-        //     #1000000;
-        // end
-    // end
-
-    initial begin
-        reset_n = 1'b0;
-        #100;
-        reset_n = 1'b1;
-
-        // wait(syn_out);
-        #1000;
-        // assert();
-        // Abrir arquivos
-        // fd_out1 = $fopen("rdata_out1.txt", "w");
-        // fd_out2 = $fopen("rdata_out2.txt", "w");
-        // fd_out3 = $fopen("rdata_out3.txt", "w");
-        // fd_out4 = $fopen("rdata_out4.txt", "w");
-
-        // if (fd_out1 == 0 || fd_out2 == 0 || fd_out3 == 0 || fd_out4 == 0) begin
-        //     $error("Error!");
-        //     $stop;
-        // end
-
-        // if (fd_out1 != 0) $fclose(fd_out1);
-        // if (fd_out2 != 0) $fclose(fd_out2);
-        // if (fd_out3 != 0) $fclose(fd_out3);
-        // if (fd_out4 != 0) $fclose(fd_out4);
-
-        // wait($feof(stimulus_from_file_inst.fh1)==0);
-
-        // $stop; 
-    end
-
-    task mm_write(input [7:0] addr, input [31:0] data);
-        begin
-            @(posedge rclk);
-            mm_addr     <= addr;
-            mm_wdata    <= data;
-            mm_write_en <= 1'b1;
-            @(posedge rclk);
-            mm_write_en <= 1'b0;
         end
     endtask
 
-    task mm_read(input [7:0] addr);
-        begin
-            @(posedge rclk);
-            mm_addr    <= addr;
-            mm_read_en <= 1'b1;
-            @(posedge rclk);
-            mm_read_en <= 1'b0;
-        end
-    endtask
+    // ============================ End Util Tasks ============================
 
 endmodule
