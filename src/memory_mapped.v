@@ -65,7 +65,7 @@ module memory_mapped (
     always @(posedge clk or negedge rstn) begin
         if (!rstn) begin
             mm_reg[0][0] <= 0;
-            mm_reg[0][1] <= 1;
+            mm_reg[0][1] <= 0;
             mm_reg[0][3:2] <= 2'b00;
             mm_reg[0][11:4] <= 8'b11100100;
             mm_reg[0][31:12] <= 0;
