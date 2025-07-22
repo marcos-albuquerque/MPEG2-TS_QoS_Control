@@ -124,6 +124,7 @@ module tb_top_QoS();
         reset_n = 1'b1;
 
         read_from_mm();
+        #50_000;
 
         // Checking if the system is initialized with manual mode and channel 0 as default
         @(posedge rclk);
@@ -141,7 +142,7 @@ module tb_top_QoS();
         // end
 
         // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
-        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd750_000);
+        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd50_000);
         #1000;
         read_from_mm();
         #50;
@@ -152,14 +153,15 @@ module tb_top_QoS();
             $stop;
         end
         #1000000;
-        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd450_000);
-        #1000000;
-        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd350_000);
+        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd50_000);
+        #300_000;
+        $display("%t: DUT.error_count: %d", $time, DUT.error_count);
+        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd50_000);
         #1000000;
 
         /* TODO:
-        * Control and monitor config interface
-        * Compare results and save it in file
+        * Control and monitor the config interface
+        * Compare results and save them in file
         */
 
     end
@@ -215,23 +217,23 @@ module tb_top_QoS();
             manual_channel = mm_rdata[3:2];
             channel_priority = mm_rdata[11:4];
             reset_timer = mm_rdata[31:12];
-            $display("fallback_enable: %b | manual_enable %b | manual_channel %b | channel_priority %b | reset_timer %d",
-                        mm_rdata[0],mm_rdata[1],mm_rdata[3:2],mm_rdata[11:4],mm_rdata[31:12]);
+            // $display("fallback_enable: %b | manual_enable %b | manual_channel %b | channel_priority %b | reset_timer %d",
+            //             mm_rdata[0],mm_rdata[1],mm_rdata[3:2],mm_rdata[11:4],mm_rdata[31:12]);
             
             mm_read(8'h01);
             @(posedge rclk);
             @(posedge rclk);
             active_channel = mm_rdata[1:0];
-            $display("canal ativo: %b | presenca de sinal %b",mm_rdata[1:0],mm_rdata[5:2]);
-            mm_read(8'h02);
+            // $display("canal ativo: %b | presenca de sinal %b",mm_rdata[1:0],mm_rdata[5:2]);
+            // mm_read(8'h02);
             @(posedge rclk);
             @(posedge rclk);
             error_count_ch0 = mm_rdata[7:0];
             error_count_ch1 = mm_rdata[15:8];
             error_count_ch2 = mm_rdata[23:16];
             error_count_ch3 = mm_rdata[31:24];
-            $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",
-                    error_count_ch0, error_count_ch1, error_count_ch2, error_count_ch3);
+            // $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",
+            //         error_count_ch0, error_count_ch1, error_count_ch2, error_count_ch3);
         end
     endtask
 
