@@ -1,9 +1,12 @@
 module mux #(
     parameter DATA_WIDTH
 )(  // Seleciona dados de um canal baseado no controle.
-    input wire [DATA_WIDTH-1:0] in_1, in_2, in_3, in_4,  // Dados dos 4 canais.
-    input wire [1:0] mux_ctrl,  // Controle de seleção (2 bits).
-    output reg [DATA_WIDTH-1:0] out  // Dados selecionados (para FIFO).
+    input  [DATA_WIDTH-1:0] in_1,
+    input  [DATA_WIDTH-1:0] in_2,
+    input  [DATA_WIDTH-1:0] in_3,
+    input  [DATA_WIDTH-1:0] in_4, 
+    input  [1:0] mux_ctrl,  // Controle de seleção (2 bits).
+    output [DATA_WIDTH-1:0] out  // Dados selecionados (para FIFO).
 );
     always @(*) begin  // Bloco combinacional, executa em qualquer mudança.
         case (mux_ctrl)  // Seleciona com base em mux_ctrl (sempre ativo agora).
