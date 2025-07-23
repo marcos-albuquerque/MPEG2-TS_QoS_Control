@@ -1,8 +1,8 @@
 `timescale 1ns/1ps
 
 module tb_top_QoS();
-    localparam real DATA_FREQUENCY = 27e6;      // Clock frequency in Hz
-    localparam real SYS_FREQUENCY  = 108e6;
+    localparam real DATA_FREQUENCY = 25e6;      // Clock frequency in Hz
+    localparam real SYS_FREQUENCY  = 100e6;
     localparam FILE_NAME1 = "tsdata1_loss.ts";
     localparam FILE_NAME2 = "tsdata2_loss.ts";
     localparam FILE_NAME3 = "tsdata3_loss.ts";
@@ -46,11 +46,6 @@ module tb_top_QoS();
     wire        valid_out;
     wire        syn_out;
     wire [7:0]  ts_data_out;
-
-    // integer fd_out1;
-    // integer fd_out2;
-    // integer fd_out3;
-    // integer fd_out4;
 
     clock_generator #(DATA_FREQUENCY, 1) CLOCK27M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK108M(.clk(rclk));
@@ -119,27 +114,78 @@ module tb_top_QoS();
     end
 
     initial begin
+        $dumpfile("tb_top_QoS.vcd");
+        $dumpvars(0, tb_top_QoS);
+    end
+
+    reg [79:0] sr_data_buffer1,
+               sr_data_buffer2,
+               sr_data_buffer3,
+               sr_data_buffer4;
+
+    initial begin
+        sr_data_buffer1 <= 0;
+        sr_data_buffer2 <= 0;
+        sr_data_buffer3 <= 0;
+        sr_data_buffer4 <= 0;
+        forever begin
+            @(posedge wclk);
+                sr_data_buffer1 <= {sr_data_buffer1[71:0], byte_data1};
+                sr_data_buffer2 <= {sr_data_buffer2[71:0], byte_data2};
+                sr_data_buffer3 <= {sr_data_buffer3[71:0], byte_data3};
+                sr_data_buffer4 <= {sr_data_buffer4[71:0], byte_data4};
+        end
+    end
+
+    initial begin
+        wait(syn_out);
+        forever begin
+            @(posedge wclk) begin
+                if (!manual_channel) begin
+                    if(DUT.en_reset_counter)
+                        repeat(10) @(posedge wclk);
+                    case (DUT.mux_control)
+                        0: begin
+                            if (sr_data_buffer1[63:56] != ts_data_out)
+                                $display("%t: Error1 %h != %h", $time, sr_data_buffer1[63:56], ts_data_out);
+                        end
+                        1: begin
+                            if (sr_data_buffer2[63:56] != ts_data_out)
+                                $display("%t: Error2 %h != %h", $time, sr_data_buffer2[63:56], ts_data_out);
+                        end
+                        2: begin
+                            if (sr_data_buffer3[63:56] != ts_data_out)
+                                $display("%t: Error3 %h != %h", $time, sr_data_buffer3[63:56], ts_data_out);
+                        end
+                        3: begin
+                            if (sr_data_buffer4[63:56] != ts_data_out)
+                                $display("%t: Error4 %h != %h", $time, sr_data_buffer4[63:56], ts_data_out);
+                        end
+                    endcase
+                end
+            end
+
+        end
+    end
+
+
+    initial begin
         reset_n = 1'b0;
-        #100;
+        repeat(13) @(posedge rclk);
         reset_n = 1'b1;
 
         read_from_mm();
         #50_000;
 
-        // Checking if the system is initialized with manual mode and channel 0 as default
+        // Checking if the system is initialized with automatic mode in channel 0 as default
         @(posedge rclk);
-            if(active_channel == 2'b00)
-                $display("Active_channel: %d | Ok", active_channel);
+            if(active_channel == 2'b00 && !manual_enable && (channel_priority == 8'b11100100))
+                $display("%1t: Active_channel: %d | Ok", $time, active_channel);
             else begin
                 $display("Error: active channel not expected!");
                 $stop;
             end
         #100;
-        // wait(syn_out);
-        // repeat(4) begin
-        //     read_from_mm();
-        //     #1000000;
-        // end
 
         // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
         write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd50_000);
@@ -155,15 +201,13 @@ module tb_top_QoS();
         #1000000;
         write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd50_000);
         #300_000;
-        $display("%t: DUT.error_count: %d", $time, DUT.error_count);
         write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd50_000);
         #1000000;
 
         /* TODO:
-        * Control and monitor the config interface
-        * Compare results and save them in file
+        * - [ ] Control and monitor the config interface
+        * - [x] Compare results and save them in file
         */
-
     end
 
     // ============================== Util Tasks ==============================
