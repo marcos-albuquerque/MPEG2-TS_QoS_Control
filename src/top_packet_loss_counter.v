@@ -20,7 +20,7 @@ module top_packet_loss_counter(
         .valid(valid[0]),
         .sync(sync[0]),
         .en_reset_counter(en_reset_counter),
-        .data(data0),
+        .ts_data(data0),
         .error_count(error_count[7:0])
     );
 
@@ -30,7 +30,7 @@ module top_packet_loss_counter(
         .valid(valid[1]),
         .sync(sync[1]),
         .en_reset_counter(en_reset_counter),
-        .data(data1),
+        .ts_data(data1),
         .error_count(error_count[15:8])
     );
     
@@ -40,7 +40,7 @@ module top_packet_loss_counter(
         .valid(valid[2]),
         .sync(sync[2]),
         .en_reset_counter(en_reset_counter),
-        .data(data2),
+        .ts_data(data2),
         .error_count(error_count[23:16])
     );
 
@@ -50,7 +50,7 @@ module top_packet_loss_counter(
         .valid(valid[3]),
         .sync(sync[3]),
         .en_reset_counter(en_reset_counter),
-        .data(data3),
+        .ts_data(data3),
         .error_count(error_count[31:24])
     );
 endmodule

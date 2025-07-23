@@ -19,7 +19,10 @@ module top_fifo_in #(
     parameter ADDR_WIDTH = 4
   ) (
     // Escrita (27 MHz)
-    input                           wclk,
+    input                           wclk1,
+    input                           wclk2,
+    input                           wclk3,
+    input                           wclk4,
     input                           wrst_n,
     input      [DATA_WIDTH-1:0]     wdata1,wdata2,wdata3,wdata4,
     input                           valid1,valid2,valid3,valid4,
@@ -38,7 +41,7 @@ module top_fifo_in #(
                     .ADDR_WIDTH(ADDR_WIDTH)
                   )
                   fifo_controller_inst1 (
-                    .wclk(wclk),
+                    .wclk(wclk1),
                     .wrst_n(wrst_n),
                     .wdata(wdata1),
                     .valid_in(valid1),
@@ -53,7 +56,7 @@ module top_fifo_in #(
                     .ADDR_WIDTH(ADDR_WIDTH)
                   )
                   fifo_controller_inst2 (
-                    .wclk(wclk),
+                    .wclk(wclk2),
                     .wrst_n(wrst_n),
                     .wdata(wdata2),
                     .valid_in(valid2),
@@ -68,7 +71,7 @@ module top_fifo_in #(
                     .ADDR_WIDTH(ADDR_WIDTH)
                   )
                   fifo_controller_inst3 (
-                    .wclk(wclk),
+                    .wclk(wclk3),
                     .wrst_n(wrst_n),
                     .wdata(wdata3),
                     .valid_in(valid3),
@@ -83,7 +86,7 @@ module top_fifo_in #(
                     .ADDR_WIDTH(ADDR_WIDTH)
                   )
                   fifo_controller_inst4 (
-                    .wclk(wclk),
+                    .wclk(wclk4),
                     .wrst_n(wrst_n),
                     .wdata(wdata4),
                     .valid_in(valid4),

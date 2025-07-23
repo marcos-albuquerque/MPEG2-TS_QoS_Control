@@ -12,7 +12,8 @@ module top_fifo_out #(
     input  [7:0] data_s4,  // Dados canais.
     input  [3:0] valid_in,
     input  [3:0] sync_in,  // Validações e sincronizações.
-    output [DATA_WIDTH:0] data_out_final  // Saída final em ~27MHz.
+    output valid_out,
+    output [DATA_WIDTH-1:0] data_out_final  // Saída final em ~27MHz.
 );
 
     wire [7:0] mux_data_out;  // Saída MUX DATA.
@@ -63,7 +64,7 @@ module top_fifo_out #(
                     .valid_in(mux_valid_out),
                     .rclk(rclk),
                     .rrst_n(rstn),
-                    .rdata(data_out_final[DATA_WIDTH-1:0]),
-                    .valid_out(data_out_final[DATA_WIDTH])
+                    .rdata(data_out_final),
+                    .valid_out(valid_out)
                   );
 endmodule
