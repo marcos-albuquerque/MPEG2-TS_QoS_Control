@@ -9,13 +9,14 @@ module stimulus_from_file #(
     parameter DATA_WIDTH = 8
     // parameter DEPTH      = 
 )(
-    input                        clk,
-    input                        rstn,
-    output reg  [3:0]            valid,
-    output      [DATA_WIDTH-1:0] byte_data1,     // ts data
-    output      [DATA_WIDTH-1:0] byte_data2,
-    output      [DATA_WIDTH-1:0] byte_data3,
-    output      [DATA_WIDTH-1:0] byte_data4
+    input  clk,
+    input  rstn,
+    output reg [3:0] valid,
+    output reg eof, // end of file
+    output [DATA_WIDTH-1:0] byte_data1,     // ts data
+    output [DATA_WIDTH-1:0] byte_data2,
+    output [DATA_WIDTH-1:0] byte_data3,
+    output [DATA_WIDTH-1:0] byte_data4
 );
     // output regs
     reg [DATA_WIDTH-1:0] byte_data1_,
@@ -35,6 +36,7 @@ module stimulus_from_file #(
         byte_data3_ <= 0;
         byte_data4_ <= 0;
         valid       <= 0;
+        eof = 0;
         wait(rstn == 1);
         fh1 = $fopen(FILE_NAME1, "rb");
         fh2 = $fopen(FILE_NAME2, "rb");
@@ -84,9 +86,10 @@ module stimulus_from_file #(
                     valid[3] = 1'b1;
                     `ifdef DEBUG
                         $display("Data4: %h", byte_data4);
-                        $display("EOF: %0d", !$feof(fh1));
+                        $display("EOF: %0d", $feof(fh1));
                     `endif
             end
+            eof <= $feof(fh1);
         end
 
         $fclose(fh1);
