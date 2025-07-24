@@ -89,7 +89,7 @@ module stimulus_from_file #(
                         $display("EOF: %0d", $feof(fh1));
                     `endif
             end
-            eof <= $feof(fh1);
+            eof <= 1;
         end
 
         $fclose(fh1);
