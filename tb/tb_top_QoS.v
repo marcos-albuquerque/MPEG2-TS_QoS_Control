@@ -1,13 +1,14 @@
 `timescale 1ns/1ps
 
 module tb_top_QoS();
-    localparam real DATA_FREQUENCY = 27e6;      // Clock frequency in Hz
-    localparam real SYS_FREQUENCY  = 108e6;
+    localparam real DATA_FREQUENCY = 25e6;      // Clock frequency in Hz
+    localparam real SYS_FREQUENCY  = 100e6;
     localparam FILE_NAME1 = "tsdata1_loss.ts";
     localparam FILE_NAME2 = "tsdata2_loss.ts";
     localparam FILE_NAME3 = "tsdata3_loss.ts";
     localparam FILE_NAME4 = "tsdata4_loss.ts";
     localparam DATA_WIDTH = 8;
+    localparam SENTINEL_TIMEOUT = 20'd5_000_000;
 
     // input signals
     reg         reset_n;
@@ -37,9 +38,9 @@ module tb_top_QoS();
     // r
     reg [1:0] active_channel;
     reg [7:0] error_count_ch0,
-              error_count_ch1,
-              error_count_ch2,
-              error_count_ch3;
+        error_count_ch1,
+        error_count_ch2,
+        error_count_ch3;
 
     // Output signal
     wire        clk_out;
@@ -47,10 +48,9 @@ module tb_top_QoS();
     wire        syn_out;
     wire [7:0]  ts_data_out;
 
-    // integer fd_out1;
-    // integer fd_out2;
-    // integer fd_out3;
-    // integer fd_out4;
+    integer fh; // file handle
+    wire eof;
+    reg [19:0] sentinel;
 
     clock_generator #(DATA_FREQUENCY, 1) CLOCK27M(.clk(wclk));
     clock_generator #(SYS_FREQUENCY, 1) CLOCK108M(.clk(rclk));
@@ -66,6 +66,7 @@ module tb_top_QoS();
         .clk(wclk),
         .rstn(reset_n),
         .valid(valid),
+        .eof(eof),
         .byte_data1(byte_data1),
         .byte_data2(byte_data2),
         .byte_data3(byte_data3),
@@ -82,17 +83,17 @@ module tb_top_QoS();
         .wclk2(wclk),
         .valid2(valid[1]),
         .ts_data2(byte_data2),
-        
+
         .wclk3(wclk),
         .valid3(valid[2]),
         .ts_data3(byte_data3),
-        
+
         .wclk4(wclk),
         .valid4(valid[3]),
         .ts_data4(byte_data4),
 
         .rclk(rclk),
-        
+
         // Config interface
         .mm_write_en(mm_write_en),
         .mm_read_en(mm_read_en),
@@ -119,33 +120,107 @@ module tb_top_QoS();
     end
 
     initial begin
+        $dumpfile("tb_top_QoS.vcd");
+        $dumpvars(0, tb_top_QoS);
+    end
+
+    reg [79:0] sr_data_buffer1,
+        sr_data_buffer2,
+        sr_data_buffer3,
+        sr_data_buffer4;
+
+    initial begin
+        sr_data_buffer1 <= 0;
+        sr_data_buffer2 <= 0;
+        sr_data_buffer3 <= 0;
+        sr_data_buffer4 <= 0;
+        forever begin
+            @(posedge wclk);
+            sr_data_buffer1 <= {sr_data_buffer1[71:0], byte_data1};
+            sr_data_buffer2 <= {sr_data_buffer2[71:0], byte_data2};
+            sr_data_buffer3 <= {sr_data_buffer3[71:0], byte_data3};
+            sr_data_buffer4 <= {sr_data_buffer4[71:0], byte_data4};
+        end
+    end
+
+    initial begin
+        wait(syn_out);
+        forever begin
+            @(posedge wclk) begin
+                if (!manual_channel) begin
+                    if(DUT.en_reset_counter)
+                        repeat(10) @(posedge wclk);
+                    case (DUT.mux_control)
+                        0: begin
+                            if (sr_data_buffer1[63:56] != ts_data_out)
+                                $display("%t: Error1 %h != %h", $time,
+                                sr_data_buffer1[63:56], ts_data_out);
+                        end
+                        1: begin
+                            if (sr_data_buffer2[63:56] != ts_data_out)
+                                $display("%t: Error2 %h != %h", $time,
+                                sr_data_buffer2[63:56], ts_data_out);
+                        end
+                        2: begin
+                            if (sr_data_buffer3[63:56] != ts_data_out)
+                                $display("%t: Error3 %h != %h", $time,
+                                sr_data_buffer3[63:56], ts_data_out);
+                        end
+                        3: begin
+                            if (sr_data_buffer4[63:56] != ts_data_out)
+                                $display("%t: Error4 %h != %h", $time,
+                                sr_data_buffer4[63:56], ts_data_out);
+                        end
+                    endcase
+                end
+            end
+        end
+    end
+
+    initial begin : writing_to_file
+        fh = $fopen("rdata_out.ts", "wb");
+        if (!fh) begin
+            $display("Error when opening file!");
+            $finish();
+        end
+        sentinel = 0;
+        wait(valid_out);
+        repeat(2) @(posedge clk_out);
+        while ((!eof && reset_n) || (sentinel <= SENTINEL_TIMEOUT)) begin
+            @(posedge clk_out);
+            if (valid_out) begin
+                $fwrite(fh, "%c", ts_data_out);
+            end
+            sentinel <= sentinel + 1;
+        end
+        $fclose(fh);
+        $finish();
+    end
+
+    initial begin
         reset_n = 1'b0;
-        #100;
+        repeat(13) @(posedge rclk);
         reset_n = 1'b1;
 
         read_from_mm();
         #50_000;
 
-        // Checking if the system is initialized with manual mode and channel 0 as default
+        // Checking if the system is initialized with automatic mode in channel 0 as default
         @(posedge rclk);
-            if(active_channel == 2'b00)
-                $display("Active_channel: %d | Ok", active_channel);
-            else begin
-                $display("Error: active channel not expected!");
-                $stop;
-            end
+        if(active_channel == 2'b00 && !manual_enable && (channel_priority == 8'b11100100))
+            $display("%1t: Active_channel: %d | Ok", $time, active_channel);
+        else begin
+            $display("Error: active channel not expected!");
+            $stop;
+        end
         #100;
-        // wait(syn_out);
-        // repeat(4) begin
-        //     read_from_mm();
-        //     #1000000;
-        // end
 
         // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
         write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd50_000);
         #1000;
         read_from_mm();
         #50;
+
         if (active_channel == 2'b00) begin
             $display("Active_channel: %d | Ok", active_channel);
         end else begin
@@ -155,15 +230,13 @@ module tb_top_QoS();
         #1000000;
         write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd50_000);
         #300_000;
-        $display("%t: DUT.error_count: %d", $time, DUT.error_count);
         write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd50_000);
         #1000000;
 
         /* TODO:
-        * Control and monitor the config interface
-        * Compare results and save them in file
+        * - [ ] Control and monitor the config interface
+        * - [x] Compare results and save them in file
         */
-
     end
 
     // ============================== Util Tasks ==============================
@@ -219,7 +292,7 @@ module tb_top_QoS();
             reset_timer = mm_rdata[31:12];
             // $display("fallback_enable: %b | manual_enable %b | manual_channel %b | channel_priority %b | reset_timer %d",
             //             mm_rdata[0],mm_rdata[1],mm_rdata[3:2],mm_rdata[11:4],mm_rdata[31:12]);
-            
+
             mm_read(8'h01);
             @(posedge rclk);
             @(posedge rclk);
@@ -234,9 +307,11 @@ module tb_top_QoS();
             error_count_ch3 = mm_rdata[31:24];
             // $display("externo canal 1: %d | canal 2: %d | canal 3: %d | canal 4: %d",
             //         error_count_ch0, error_count_ch1, error_count_ch2, error_count_ch3);
+
+
         end
     endtask
 
     // ============================ End Util Tasks ============================
 
-endmodule
+ endmodule
