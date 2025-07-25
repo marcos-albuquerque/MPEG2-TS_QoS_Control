@@ -4,10 +4,10 @@ import time
 
 INPUT_FILE = "tsdata.ts"
 
-OUTPUT_FILE1 = R"C:\Users\marco\Documents\tsdata1_loss.ts"
-OUTPUT_FILE2 = R"C:\Users\marco\Documents\tsdata2_loss.ts"
-OUTPUT_FILE3 = R"C:\Users\marco\Documents\tsdata3_loss.ts"
-OUTPUT_FILE4 = R"C:\Users\marco\Documents\tsdata4_loss.ts"
+OUTPUT_FILE1 = "tsdata1_loss.ts"
+OUTPUT_FILE2 = "tsdata2_loss.ts"
+OUTPUT_FILE3 = "tsdata3_loss.ts"
+OUTPUT_FILE4 = "tsdata4_loss.ts"
 
 PACKET_SIZE = 188
 CHUNK_SIZE = 190

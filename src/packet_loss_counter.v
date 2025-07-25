@@ -17,6 +17,7 @@ module packet_loss_counter (
     reg [1:0] adaption_field_ctrl;
     reg [3:0] previous_cc;          // previous continuity counter (cc)
     reg [3:0] current_cc;           // current cc
+    reg [3:0] cc_check;
     reg firt_cc_flag;               // flag to indicate first cc
     
     // output reg
@@ -41,13 +42,13 @@ module packet_loss_counter (
                     end
                 end
                 COUNT: begin
-                    if (byte_counter == 2) begin
+                    if (byte_counter == 2'd2) begin
                         current_cc <= ts_data[3:0];
                         adaption_field_ctrl <= ts_data[5:4];
                         byte_counter <= 0;
                         state <= PROCESSING;
                     end else begin
-                        byte_counter <= byte_counter + 1;
+                        byte_counter <= byte_counter + 1'b1;
                     end
                 end
                 PROCESSING: begin
@@ -56,10 +57,11 @@ module packet_loss_counter (
                     if ((adaption_field_ctrl == 2'b00) || (adaption_field_ctrl == 2'b10)) begin
                         byte_counter <= 0;
                     end else if (!firt_cc_flag) begin
-                        if (current_cc == previous_cc + 1) begin
+                        cc_check <= current_cc == previous_cc + 1'b1;
+                        if (cc_check) begin
                             byte_counter <= 0;
                         end else begin 
-                            error_count_ = error_count_ + 1;
+                            error_count_ <= error_count_ + 1'b1;
                         end
                         previous_cc <= current_cc;
                     end else begin

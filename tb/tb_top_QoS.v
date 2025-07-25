@@ -8,7 +8,7 @@ module tb_top_QoS();
     localparam FILE_NAME3 = "tsdata3_loss.ts";
     localparam FILE_NAME4 = "tsdata4_loss.ts";
     localparam DATA_WIDTH = 8;
-    localparam SENTINEL_TIMEOUT = 20'd1_000_000;
+    localparam SENTINEL_TIMEOUT = 20'd5_000_000;
 
     // input signals
     reg         reset_n;
