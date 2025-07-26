@@ -186,7 +186,7 @@ module tb_top_QoS();
         sentinel = 0;
         wait(valid_out);
         repeat(2) @(posedge clk_out);
-        while ((!eof && reset_n) || (sentinel <= SENTINEL_TIMEOUT)) begin
+        while (!eof && reset_n) begin
             @(posedge clk_out);
             if (valid_out) begin
                 $fwrite(fh, "%c", ts_data_out);
@@ -216,7 +216,7 @@ module tb_top_QoS();
         #100;
 
         // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
-        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd50_000);
+        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd750_000);
         #1000;
         read_from_mm();
         #50;
@@ -228,13 +228,13 @@ module tb_top_QoS();
             $stop;
         end
         #1000000;
-        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd50_000);
+        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd750_000);
         #300_000;
-        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd50_000);
+        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd750_000);
         #1000000;
 
         /* TODO:
-        * - [ ] Control and monitor the config interface
+        * - [x] Control and monitor the config interface
         * - [x] Compare results and save them in file
         */
     end
