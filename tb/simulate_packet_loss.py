@@ -10,7 +10,7 @@ OUTPUT_FILE3 = "tsdata3_loss.ts"
 OUTPUT_FILE4 = "tsdata4_loss.ts"
 
 PACKET_SIZE = 188
-CHUNK_SIZE = 190
+CHUNK_SIZE = 15770
 
 def read_ts_packets(filepath : str):
     with open(filepath, "rb") as fh:
@@ -29,7 +29,6 @@ def simulate_loss(packets, num_to_remove, ch):
 
     chunks = [packets[i:i+CHUNK_SIZE] for i in range(0, len(packets), CHUNK_SIZE)]
     chunk_length = len(chunks[0])
-    print("chunk_length: ", chunk_length)
     
     if num_to_remove > chunk_length:
         raise ValueError("Error: trying to delete more packets than the total available.")
@@ -43,13 +42,8 @@ def simulate_loss(packets, num_to_remove, ch):
             pl_ch_idx = [i for i in range(len(chunks)) if (i-2) % 5 != 0]
         case 4:
             pl_ch_idx = [i for i in range(len(chunks)) if (i-3) % 5 != 0]
-
-    print("pl_ch1_idx: ", pl_ch_idx)
-
-    print("chunks lenght", len(chunks))
-    # print(chunks[94][829])
     
-    indexes_to_remove = sorted(random.sample(range(len(chunks[0])), num_to_remove), reverse=True)
+    indexes_to_remove = sorted(random.sample(range(CHUNK_SIZE), num_to_remove), reverse=True)
 
     for i in pl_ch_idx:
         for index in indexes_to_remove:
@@ -71,7 +65,7 @@ def main():
         return
     
     packets = read_ts_packets(filepath=file_path)
-    modified_packets = simulate_loss(packets, 100, ch=4)
+    modified_packets = simulate_loss(packets, 1000, ch=4)
 
     write_ts_packets(file_path_out, modified_packets)
 
