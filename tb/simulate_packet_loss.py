@@ -4,10 +4,10 @@ import time
 
 INPUT_FILE = "tsdata.ts"
 
-OUTPUT_FILE1 = R"C:\Users\marco\Documents\tsdata1_loss.ts"
-OUTPUT_FILE2 = R"C:\Users\marco\Documents\tsdata2_loss.ts"
-OUTPUT_FILE3 = R"C:\Users\marco\Documents\tsdata3_loss.ts"
-OUTPUT_FILE4 = R"C:\Users\marco\Documents\tsdata4_loss.ts"
+OUTPUT_FILE1 = "tsdata1_loss.ts"
+OUTPUT_FILE2 = "tsdata2_loss.ts"
+OUTPUT_FILE3 = "tsdata3_loss.ts"
+OUTPUT_FILE4 = "tsdata4_loss.ts"
 
 PACKET_SIZE = 188
 CHUNK_SIZE = 15770
@@ -29,7 +29,6 @@ def simulate_loss(packets, num_to_remove, ch):
 
     chunks = [packets[i:i+CHUNK_SIZE] for i in range(0, len(packets), CHUNK_SIZE)]
     chunk_length = len(chunks[0])
-    print("chunks_length: ", chunk_length)
     
     if num_to_remove > chunk_length:
         raise ValueError("Error: trying to delete more packets than the total available.")
@@ -43,11 +42,6 @@ def simulate_loss(packets, num_to_remove, ch):
             pl_ch_idx = [i for i in range(len(chunks)) if (i-2) % 5 != 0]
         case 4:
             pl_ch_idx = [i for i in range(len(chunks)) if (i-3) % 5 != 0]
-
-    print("pl_ch1_idx: ", pl_ch_idx)
-
-    print("chunks lenght", len(chunks))
-    # print(chunks[94][829])
     
     indexes_to_remove = sorted(random.sample(range(CHUNK_SIZE), num_to_remove), reverse=True)
 

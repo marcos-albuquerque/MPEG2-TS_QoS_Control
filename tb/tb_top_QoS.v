@@ -232,11 +232,6 @@ module tb_top_QoS();
         #300_000;
         write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd750_000);
         #1000000;
-
-        /* TODO:
-        * - [x] Control and monitor the config interface
-        * - [x] Compare results and save them in file
-        */
     end
 
     // ============================== Util Tasks ==============================
