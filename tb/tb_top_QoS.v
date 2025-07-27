@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+`timescale 1ns/100ps
 
 module tb_top_QoS();
     localparam real DATA_FREQUENCY = 25e6;      // Clock frequency in Hz

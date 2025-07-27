@@ -108,7 +108,7 @@ module main_control(
     end
 
     //Detect signal by channel
-    always @(*) begin : CHANNEL_SIGNAL_LOGIC
+    always @(posedge clk or negedge rstn) begin : CHANNEL_SIGNAL_LOGIC
         if(!rstn) begin
             signal_present_ctrl     <= 4'b0000;
         end
