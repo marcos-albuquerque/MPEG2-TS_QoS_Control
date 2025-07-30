@@ -37,10 +37,10 @@ module main_control(
 );
 
     //FSM States
-    localparam IDLE        = 2'd0;
-    localparam CONFIG_MODE = 2'd1;
-    localparam AUTO_MODE   = 2'd2;
-    localparam MANUAL_MODE = 2'd3;
+    //localparam IDLE        = 2'd0;
+    //localparam CONFIG_MODE = 2'd1;
+    //localparam AUTO_MODE   = 2'd2;
+    //localparam MANUAL_MODE = 2'd3;
 
     //Channels
     localparam CHANNEL1    = 2'd0;
