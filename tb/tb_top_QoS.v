@@ -216,7 +216,7 @@ module tb_top_QoS();
         #100;
 
         // 2250 -> 3 MPEG packages (Receive 1 MPEG package with 750 clock cycles).
-        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd750_000);
+        write_to_mm(1, 0, 2'b00, 8'b11_01_10_00, 20'd500_000);
         #1000;
         read_from_mm();
         #50;
@@ -228,9 +228,9 @@ module tb_top_QoS();
             $stop;
         end
         #1000000;
-        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd750_000);
+        write_to_mm(1, 1, 2'b10, 8'b11_01_10_00, 20'd500_000);
         #300_000;
-        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd750_000);
+        write_to_mm(0, 0, 2'b11, 8'b00_11_10_01, 20'd500_000);
         #1000000;
     end
 

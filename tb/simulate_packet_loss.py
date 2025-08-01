@@ -10,7 +10,7 @@ OUTPUT_FILE3 = "tsdata3_loss.ts"
 OUTPUT_FILE4 = "tsdata4_loss.ts"
 
 PACKET_SIZE = 188
-CHUNK_SIZE = 15770
+CHUNK_SIZE = 7985
 
 def read_ts_packets(filepath : str):
     with open(filepath, "rb") as fh:
@@ -35,13 +35,13 @@ def simulate_loss(packets, num_to_remove, ch):
 
     match ch:
         case 1:
-            pl_ch_idx = [i for i in range(len(chunks)) if i % 5 != 0]
+            pl_ch_idx = [i for i in range(len(chunks)) if i % 4 != 0]
         case 2:
-            pl_ch_idx = [i for i in range(len(chunks)) if (i-1) % 5 != 0]
+            pl_ch_idx = [i for i in range(len(chunks)) if (i-1) % 4 != 0]
         case 3:
-            pl_ch_idx = [i for i in range(len(chunks)) if (i-2) % 5 != 0]
+            pl_ch_idx = [i for i in range(len(chunks)) if (i-2) % 4 != 0]
         case 4:
-            pl_ch_idx = [i for i in range(len(chunks)) if (i-3) % 5 != 0]
+            pl_ch_idx = [i for i in range(len(chunks)) if (i-3) % 4 != 0]
     
     indexes_to_remove = sorted(random.sample(range(CHUNK_SIZE), num_to_remove), reverse=True)
 
@@ -65,7 +65,7 @@ def main():
         return
     
     packets = read_ts_packets(filepath=file_path)
-    modified_packets = simulate_loss(packets, 1000, ch=4)
+    modified_packets = simulate_loss(packets, 300, ch=4)
 
     write_ts_packets(file_path_out, modified_packets)
 
