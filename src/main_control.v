@@ -25,12 +25,8 @@ module main_control(
     input         rstn,
     input  [31:0] err_count,
     input  [3:0]  sync,
-
-    input         mm_write_en,
-    input         mm_read_en,
-    input  [7:0]  mm_addr,
-    input  [31:0] mm_wdata,
-    output [31:0] mm_rdata,
+    inout         sda,   //Bidirectional pin
+    input         scl,
 
     output [1:0]  mux_control,
     output        en_reset_counter
@@ -57,15 +53,75 @@ module main_control(
 
     //Main_control variables
     reg  [1:0]  active_channel;
+    wire        receiving_config;
 
     //Aux variables
     reg [19:0] intern_counter;
     reg [3:0]  signal_present_ctrl;
     reg        reset_packet_loss_counter;
-    reg        mm_write_en_fall_detection;
 
     assign mux_control        = active_channel;
     assign en_reset_counter   = reset_packet_loss_counter;
+
+    // Bridge variables
+
+    wire [7:0] data_out;
+    wire data_ready;
+    wire rw;                  // 0 = write , 1 = read
+
+    wire [7:0] data_in;
+    wire tx_data_valid;
+    wire txn_start;
+    wire tx_byte_done;
+
+    wire [7:0]  mm_addr;
+    wire [31:0] mm_wdata;
+    wire [31:0] mm_rdata;
+
+    wire mm_write_en;
+    wire mm_read_en;
+
+
+
+    i2c_mm_bridge i2c_mm_bridge_inst (
+
+        .clk(clk),
+        .rstn(rstn),
+
+        // interface com i2c_slave
+        .data_out(data_out),
+        .data_ready(data_ready),
+        .rw(rw),                  // 0 = write , 1 = read
+        .txn_start(txn_start),
+        .tx_byte_done(tx_byte_done),
+
+        .data_in(data_in),
+        .tx_data_valid(tx_data_valid),
+
+        // interface memory mapped
+        .mm_addr(mm_addr),
+        .mm_wdata(mm_wdata),
+        .mm_rdata(mm_rdata),
+
+        .mm_write_en(mm_write_en),
+        .mm_read_en(mm_read_en)
+    );
+
+    i2c_slave i2c_slave_inst (
+        .clk(clk),         // Clock do sistema
+        .rstn(rstn),        // Reset negativo do sistema
+        .scl(scl),         // Linha de clock I2C
+        .sda(sda),         // Linha de dados I2C
+        .data_out(data_out),       // Dado recebido
+        .data_in(data_in),        // Dado a ser enviado pelo escravo
+        .tx_data_valid(tx_data_valid),
+        .data_ready(data_ready),     // Flag indicando dado recebido
+        .rw(rw),             // Flag indicando operação (0 = write, 1 = read)
+        .ack_error(),      // Flag para indicar erro no ACK do mestre
+        .start(receiving_config),           // Indica inicio e fim da transmissao
+        .txn_start(txn_start),
+        .tx_byte_done(tx_byte_done)
+    );
 
     memory_mapped mm_mapped (
 
@@ -102,7 +158,7 @@ module main_control(
         end 
         else begin 
             if      (intern_counter == reset_timer) intern_counter <= 20'd0; // if intern_counter = reset_timer, it starts a new count.
-            else if (mm_write_en == 1'b1)           intern_counter <= 20'd0; // // if state = config it starts a new count.
+            else if (reset_packet_loss_counter)          intern_counter <= 20'd0; // if configuration was applied or a reselection happened, restart the count.
             else                                    intern_counter <= intern_counter + 1;
         end
     end
@@ -128,30 +184,25 @@ module main_control(
         if(!rstn) begin
             active_channel             <= CHANNEL1;
             reset_packet_loss_counter  <= 1'b0;
-            mm_write_en_fall_detection <= 1'b0;
         end
-        else 
+        else begin
+            reset_packet_loss_counter <= 1'b0;
+
             if(mm_write_en) begin
                 reset_packet_loss_counter <= 1'b1;
-                mm_write_en_fall_detection <= mm_write_en;
+                if (mm_wdata[1]) active_channel <= mm_wdata[3:2];
+                else             active_channel <= mm_wdata[5:4];
             end
             else begin
                 if (manual_enable) active_channel <= manual_channel;        // After the CPU finishes writing to memory-mapped registers and manual enable equals 1, it'll select manual channel
-                else begin
-                    if (mm_write_en_fall_detection != mm_write_en) begin    // After the CPU finishes writing to memory-mapped registers, apply the new configuration..
-                        active_channel              <= channel_priority[1:0];
-                        mm_write_en_fall_detection  <= mm_write_en;
-                        reset_packet_loss_counter   <= 1'b0;
-                    end
-                    else begin                                              // If none of the earlier conditions are met, automatic mode will be selected.
-                        reset_packet_loss_counter <= 1'b0;
-                        if (intern_counter > reset_timer-1) begin
-                            active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count,signal_present_ctrl);
-                            reset_packet_loss_counter <= 1'b1;
-                        end
+                else begin                                              // If none of the earlier conditions are met, automatic mode will be selected.
+                    if (intern_counter > reset_timer-1) begin
+                        active_channel            <= select_new_channel(fallback_enable,channel_priority,err_count,signal_present_ctrl);
+                        reset_packet_loss_counter <= 1'b1;
                     end
                 end
             end
+        end
     end
 
     //This function compare four channel to select the best channel according its counter.
