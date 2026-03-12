@@ -159,7 +159,7 @@ module main_control(
         else begin 
             if      (intern_counter == reset_timer) intern_counter <= 20'd0; // if intern_counter = reset_timer, it starts a new count.
             else if (reset_packet_loss_counter)          intern_counter <= 20'd0; // if configuration was applied or a reselection happened, restart the count.
-            else                                    intern_counter <= intern_counter + 1;
+            else                                    intern_counter <= intern_counter + 1'b1;
         end
     end
 

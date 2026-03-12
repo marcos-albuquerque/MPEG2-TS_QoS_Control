@@ -21,11 +21,8 @@ module top_QoS (
     input         rclk,
     
     // Config interface
-    input         mm_write_en,
-    input         mm_read_en,
-    input  [7:0]  mm_addr,
-    input  [31:0] mm_wdata,
-    output [31:0] mm_rdata,
+    inout         sda,   //Bidirectional pin
+    input         scl,
 
     // Outputs
     output clk_out,
@@ -146,11 +143,8 @@ module top_QoS (
         .rstn(rst_n),
         .err_count(error_count),
         .sync({sync_out4,sync_out3,sync_out2,sync_out1}),
-        .mm_write_en(mm_write_en),
-        .mm_read_en(mm_read_en),
-        .mm_addr(mm_addr),
-        .mm_wdata(mm_wdata),
-        .mm_rdata(mm_rdata),
+        .sda(sda),
+        .scl(scl),
         .mux_control(mux_control),
         .en_reset_counter(en_reset_counter)
     );
