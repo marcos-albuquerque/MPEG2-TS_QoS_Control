@@ -16,7 +16,7 @@ module i2c_slave (
     output reg        tx_byte_done
 );
 
-    localparam [6:0] ADDRESS = 7'h6A;
+    localparam [6:0] ADDRESS = 7'h6A; // 7'b110_1010
 
     localparam [3:0] IDLE      = 4'd0;
     localparam [3:0] ADDR      = 4'd1;
