@@ -14,7 +14,7 @@ module mux #(
             2'b01:   out = in_2;  // Canal 2.
             2'b10:   out = in_3;  // Canal 3.
             2'b11:   out = in_4;  // Canal 4.
-            default: out = 8'b0;  // Caso inválido: zera para segurança.
+            default: out = 0;  // Caso inválido: zera para segurança.
         endcase
     end
 endmodule

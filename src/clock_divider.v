@@ -19,7 +19,7 @@ module clock_divider #(
             counter <= 0;
             clk_pulse_out_ <= 1;
         end else if (counter < (CLK_COUNT_VAL >> 1)) begin
-            counter <= counter + 1;
+            counter <= counter + 1'b1;
         end else begin
             counter <= 0;
             clk_pulse_out_ <= ~clk_pulse_out_;
