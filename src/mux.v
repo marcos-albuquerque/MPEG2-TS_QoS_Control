@@ -1,5 +1,5 @@
 module mux #(
-    parameter DATA_WIDTH
+    parameter DATA_WIDTH=8
 )(  // Seleciona dados de um canal baseado no controle.
     input       [DATA_WIDTH-1:0] in_1,
     input       [DATA_WIDTH-1:0] in_2,
