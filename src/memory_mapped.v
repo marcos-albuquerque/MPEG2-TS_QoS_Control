@@ -71,6 +71,7 @@ module memory_mapped (
             mm_reg[0][31:12] <= 0;
             mm_reg[1] <= 0;
             mm_reg[2] <= 0;
+            mm_rdata  <= 0;
         end else begin
             mm_reg[1] <= {26'd0, signal_present, active_channel};
             mm_reg[2] <= {error_count_ch3, error_count_ch2, error_count_ch1, error_count_ch0};
